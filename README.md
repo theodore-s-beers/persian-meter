@@ -1,1 +1,1 @@
-An ongoing experiment, in Rust, to detect the meter of a classical Persian poem
+This is an ongoing experiment, in Rust, to detect the meter of a classical Persian poem. The program command requires one argument, a filename; and that file in turn must contain at least ten hemistichs of poetry (<em>i.e.</em>, five <em>bayt</em>s), with one hemistich per line. Results are printed to the terminal.

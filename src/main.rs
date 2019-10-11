@@ -1,4 +1,5 @@
-use std::io;
+use std::env;
+use std::fs;
 
 fn main() {
     // Set up Booleans for meter length classification
@@ -27,27 +28,54 @@ fn main() {
     let mut short_second_syllable_markers: u32 = 0;
     let mut short_second_syllable_locs = String::new();
 
-    // Prompt input
-    println!("Enter ten consecutive hemistichs:");
+    // Get filename from command arguments
+    let args: Vec<String> = env::args().collect();
+    // Panic if no argument was given
+    if args.len() < 2 {
+        panic!("A filename must be provided");
+    }
+    let filename = &args[1];
 
-    // Set up hemistich counter
-    let mut hem_id = 1;
+    // Read the relevant file to a string
+    let poem = fs::read_to_string(filename).expect("Something went wrong reading the file");
+
+    // Trim outside whitespace, and remove interior empty lines (up to three in a row)
+    // I know this is janky, but it works for now
+    let poem_trimmed = poem
+        .trim()
+        .replace("\n\n", "\n")
+        .replace("\n\n", "\n")
+        .replace("\n\n", "\n");
+
+    // Panic if the poem is too short
+    if poem_trimmed.lines().count() < 10 {
+        panic!("Ten hemistichs are required");
+    }
+
+    // Setup for printing the reconstructed hemistichs
+    println!("Assessing the following hemistichs:");
 
     //
-    // Data-gathering loop
+    // Primary loop
     //
 
-    for _ in 0..10 {
-        // io
-        let mut hemistich = String::new();
-        io::stdin()
-            .read_line(&mut hemistich)
-            .expect("Failed to read line…");
+    for (hem_id, hemistich) in poem_trimmed.lines().enumerate() {
+        // Take only the first ten hemistichs
+        if hem_id > 9 {
+            continue;
+        }
+
+        // Define a non-zero-indexed counter for display
+        let true_hem_id = hem_id + 1;
 
         // Reconstruct the hemistich as a vector of chars; create a version without spaces
-        let hem_recon: Vec<char> = reconstruct_hemistich(hemistich);
+        let hem_recon: Vec<char> = reconstruct_hemistich(hemistich.to_string());
         let mut hem_recon_nospace = hem_recon.clone();
         hem_recon_nospace.retain(|x| *x != ' ');
+
+        // Print the reconstructed hemistich and its number
+        let hem_recon_str: String = hem_recon.iter().collect();
+        println!("{}: {}", true_hem_id, hem_recon_str);
 
         // Count chars (excluding spaces), and add to the total
         let hem_letter_count = hem_recon_nospace.len();
@@ -57,7 +85,7 @@ fn main() {
         let long_first_syllable_result = long_first_syllable(hem_recon.clone());
         if long_first_syllable_result > 0 {
             long_first_syllable_markers += long_first_syllable_result;
-            long_first_syllable_locs.push_str(&hem_id.to_string());
+            long_first_syllable_locs.push_str(&true_hem_id.to_string());
             long_first_syllable_locs.push_str(", ");
         }
 
@@ -65,7 +93,7 @@ fn main() {
         let short_first_syllable_result = short_first_syllable(hem_recon.clone());
         if short_first_syllable_result > 0 {
             short_first_syllable_markers += short_first_syllable_result;
-            short_first_syllable_locs.push_str(&hem_id.to_string());
+            short_first_syllable_locs.push_str(&true_hem_id.to_string());
             short_first_syllable_locs.push_str(", ");
         }
 
@@ -74,7 +102,7 @@ fn main() {
             long_second_syllable(hem_recon.clone(), hem_recon_nospace.clone());
         if long_second_syllable_result > 0 {
             long_second_syllable_markers += long_second_syllable_result;
-            long_second_syllable_locs.push_str(&hem_id.to_string());
+            long_second_syllable_locs.push_str(&true_hem_id.to_string());
             long_second_syllable_locs.push_str(", ");
         }
 
@@ -83,7 +111,7 @@ fn main() {
             short_second_syllable(hem_recon.clone(), hem_recon_nospace.clone());
         if short_second_syllable_result > 0 {
             short_second_syllable_markers += short_second_syllable_result;
-            short_second_syllable_locs.push_str(&hem_id.to_string());
+            short_second_syllable_locs.push_str(&true_hem_id.to_string());
             short_second_syllable_locs.push_str(", ");
         }
 
@@ -119,9 +147,6 @@ fn main() {
                 }
             }
         }
-
-        // Add to counter
-        hem_id += 1;
     }
 
     //
@@ -237,9 +262,9 @@ fn reconstruct_hemistich(hemistich: String) -> Vec<char> {
             // ٰVowels
             'ا' | 'آ' | 'و' | 'ی' => hem_recon.push(c),
             // Consonants (including isolated hamzah)
-            'ء' | 'ب' | 'پ' | 'ت' | 'ث' | 'ج' | 'چ' | 'ح' | 'خ' | 'د' | 'ذ' | 'ر'
-            | 'ز' | 'ژ' | 'س' | 'ش' | 'ص' | 'ض' | 'ط' | 'ظ' | 'ع' | 'غ' | 'ف' | 'ق'
-            | 'ک' | 'گ' | 'ل' | 'م' | 'ن' | 'ه' => hem_recon.push(c),
+            'ء' | 'ب' | 'پ' | 'ت' | 'ث' | 'ج' | 'چ' | 'ح' | 'خ' | 'د' | 'ذ' | 'ر' | 'ز' | 'ژ'
+            | 'س' | 'ش' | 'ص' | 'ض' | 'ط' | 'ظ' | 'ع' | 'غ' | 'ف' | 'ق' | 'ک' | 'گ' | 'ل' | 'م'
+            | 'ن' | 'ه' => hem_recon.push(c),
             // Alif hamzah
             'أ' => hem_recon.push('ا'),
             // Vav hamzah
@@ -283,9 +308,9 @@ fn long_first_syllable(hem_recon: Vec<char>) -> u32 {
     {
         match hem_recon[3] {
             // Consonants
-            'ء' | 'ب' | 'پ' | 'ت' | 'ث' | 'ج' | 'چ' | 'ح' | 'خ' | 'د' | 'ذ' | 'ر'
-            | 'ز' | 'ژ' | 'س' | 'ش' | 'ص' | 'ض' | 'ط' | 'ظ' | 'ع' | 'غ' | 'ف' | 'ق'
-            | 'ک' | 'گ' | 'ل' | 'م' | 'ن' | 'ه' => long_first_syllable_markers += 1,
+            'ء' | 'ب' | 'پ' | 'ت' | 'ث' | 'ج' | 'چ' | 'ح' | 'خ' | 'د' | 'ذ' | 'ر' | 'ز' | 'ژ'
+            | 'س' | 'ش' | 'ص' | 'ض' | 'ط' | 'ظ' | 'ع' | 'غ' | 'ف' | 'ق' | 'ک' | 'گ' | 'ل' | 'م'
+            | 'ن' | 'ه' => long_first_syllable_markers += 1,
             _ => {}
         }
     }
@@ -302,9 +327,9 @@ fn short_first_syllable(hem_recon: Vec<char>) -> u32 {
     if hem_recon[0..2] == ['ز', ' '] {
         match hem_recon[2] {
             // Consonants
-            'ء' | 'ب' | 'پ' | 'ت' | 'ث' | 'ج' | 'چ' | 'ح' | 'خ' | 'د' | 'ذ' | 'ر'
-            | 'ز' | 'ژ' | 'س' | 'ش' | 'ص' | 'ض' | 'ط' | 'ظ' | 'ع' | 'غ' | 'ف' | 'ق'
-            | 'ک' | 'گ' | 'ل' | 'م' | 'ن' | 'ه' => short_first_syllable_markers += 1,
+            'ء' | 'ب' | 'پ' | 'ت' | 'ث' | 'ج' | 'چ' | 'ح' | 'خ' | 'د' | 'ذ' | 'ر' | 'ز' | 'ژ'
+            | 'س' | 'ش' | 'ص' | 'ض' | 'ط' | 'ظ' | 'ع' | 'غ' | 'ف' | 'ق' | 'ک' | 'گ' | 'ل' | 'م'
+            | 'ن' | 'ه' => short_first_syllable_markers += 1,
             _ => {}
         }
     }
@@ -354,9 +379,9 @@ fn long_second_syllable(hem_recon: Vec<char>, hem_recon_nospace: Vec<char>) -> u
     if hem_recon[2] == 'ا' {
         match hem_recon[1] {
             // Consonants
-            'ء' | 'ب' | 'پ' | 'ت' | 'ث' | 'ج' | 'چ' | 'ح' | 'خ' | 'د' | 'ذ' | 'ر'
-            | 'ز' | 'ژ' | 'س' | 'ش' | 'ص' | 'ض' | 'ط' | 'ظ' | 'ع' | 'غ' | 'ف' | 'ق'
-            | 'ک' | 'گ' | 'ل' | 'م' | 'ن' | 'ه' => long_second_syllable_markers += 1,
+            'ء' | 'ب' | 'پ' | 'ت' | 'ث' | 'ج' | 'چ' | 'ح' | 'خ' | 'د' | 'ذ' | 'ر' | 'ز' | 'ژ'
+            | 'س' | 'ش' | 'ص' | 'ض' | 'ط' | 'ظ' | 'ع' | 'غ' | 'ف' | 'ق' | 'ک' | 'گ' | 'ل' | 'م'
+            | 'ن' | 'ه' => long_second_syllable_markers += 1,
             _ => {}
         }
     }
@@ -414,9 +439,9 @@ fn initial_clues(hem_recon: Vec<char>) -> Vec<char> {
     if hem_recon[0..4] == ['ا', 'گ', 'ر', ' '] {
         match hem_recon[4] {
             // Consonants
-            'ء' | 'ب' | 'پ' | 'ت' | 'ث' | 'ج' | 'چ' | 'ح' | 'خ' | 'د' | 'ذ' | 'ر'
-            | 'ز' | 'ژ' | 'س' | 'ش' | 'ص' | 'ض' | 'ط' | 'ظ' | 'ع' | 'غ' | 'ف' | 'ق'
-            | 'ک' | 'گ' | 'ل' | 'م' | 'ن' | 'ه' => clue_identifiers.push('a'),
+            'ء' | 'ب' | 'پ' | 'ت' | 'ث' | 'ج' | 'چ' | 'ح' | 'خ' | 'د' | 'ذ' | 'ر' | 'ز' | 'ژ'
+            | 'س' | 'ش' | 'ص' | 'ض' | 'ط' | 'ظ' | 'ع' | 'غ' | 'ف' | 'ق' | 'ک' | 'گ' | 'ل' | 'م'
+            | 'ن' | 'ه' => clue_identifiers.push('a'),
             _ => {}
         }
     }
@@ -425,9 +450,9 @@ fn initial_clues(hem_recon: Vec<char>) -> Vec<char> {
     if hem_recon[0..4] == ['ک', 'س', 'ی', ' '] {
         match hem_recon[4] {
             // Consonants
-            'ء' | 'ب' | 'پ' | 'ت' | 'ث' | 'ج' | 'چ' | 'ح' | 'خ' | 'د' | 'ذ' | 'ر'
-            | 'ز' | 'ژ' | 'س' | 'ش' | 'ص' | 'ض' | 'ط' | 'ظ' | 'ع' | 'غ' | 'ف' | 'ق'
-            | 'ک' | 'گ' | 'ل' | 'م' | 'ن' | 'ه' => clue_identifiers.push('k'),
+            'ء' | 'ب' | 'پ' | 'ت' | 'ث' | 'ج' | 'چ' | 'ح' | 'خ' | 'د' | 'ذ' | 'ر' | 'ز' | 'ژ'
+            | 'س' | 'ش' | 'ص' | 'ض' | 'ط' | 'ظ' | 'ع' | 'غ' | 'ف' | 'ق' | 'ک' | 'گ' | 'ل' | 'م'
+            | 'ن' | 'ه' => clue_identifiers.push('k'),
             _ => {}
         }
     }
@@ -436,9 +461,9 @@ fn initial_clues(hem_recon: Vec<char>) -> Vec<char> {
     if hem_recon[0..4] == ['ی', 'ک', 'ی', ' '] {
         match hem_recon[4] {
             // Consonants
-            'ء' | 'ب' | 'پ' | 'ت' | 'ث' | 'ج' | 'چ' | 'ح' | 'خ' | 'د' | 'ذ' | 'ر'
-            | 'ز' | 'ژ' | 'س' | 'ش' | 'ص' | 'ض' | 'ط' | 'ظ' | 'ع' | 'غ' | 'ف' | 'ق'
-            | 'ک' | 'گ' | 'ل' | 'م' | 'ن' | 'ه' => clue_identifiers.push('y'),
+            'ء' | 'ب' | 'پ' | 'ت' | 'ث' | 'ج' | 'چ' | 'ح' | 'خ' | 'د' | 'ذ' | 'ر' | 'ز' | 'ژ'
+            | 'س' | 'ش' | 'ص' | 'ض' | 'ط' | 'ظ' | 'ع' | 'غ' | 'ف' | 'ق' | 'ک' | 'گ' | 'ل' | 'م'
+            | 'ن' | 'ه' => clue_identifiers.push('y'),
             _ => {}
         }
     }
