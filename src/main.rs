@@ -2,6 +2,38 @@ use std::env;
 use std::fs;
 
 fn main() {
+    // Get filename from command arguments
+    let args: Vec<String> = env::args().collect();
+    // Panic if no argument was given
+    if args.len() < 2 {
+        panic!("A filename must be provided");
+    }
+    let filename = &args[1];
+
+    // Apply a sanity check for the size of the file provided
+    let file_size = fs::metadata(filename)
+        .expect("Something went wrong reading the file")
+        .len();
+    if file_size > 10000 {
+        panic!("The file appears suspiciously large");
+    }
+
+    // Read the relevant file to a string
+    let poem = fs::read_to_string(filename).expect("Something went wrong reading the file");
+
+    // Trim outside whitespace, and remove interior empty lines (up to three in a row)
+    // I know this is janky, but it works for now
+    let poem_trimmed = poem
+        .trim()
+        .replace("\n\n", "\n")
+        .replace("\n\n", "\n")
+        .replace("\n\n", "\n");
+
+    // Panic if the poem is too short
+    if poem_trimmed.lines().count() < 10 {
+        panic!("Ten hemistichs are required");
+    }
+
     // Set up Booleans for meter length classification
     let mut long_meter = false;
     let mut short_meter = false;
@@ -28,32 +60,8 @@ fn main() {
     let mut short_second_syllable_markers: u32 = 0;
     let mut short_second_syllable_locs = String::new();
 
-    // Get filename from command arguments
-    let args: Vec<String> = env::args().collect();
-    // Panic if no argument was given
-    if args.len() < 2 {
-        panic!("A filename must be provided");
-    }
-    let filename = &args[1];
-
-    // Read the relevant file to a string
-    let poem = fs::read_to_string(filename).expect("Something went wrong reading the file");
-
-    // Trim outside whitespace, and remove interior empty lines (up to three in a row)
-    // I know this is janky, but it works for now
-    let poem_trimmed = poem
-        .trim()
-        .replace("\n\n", "\n")
-        .replace("\n\n", "\n")
-        .replace("\n\n", "\n");
-
-    // Panic if the poem is too short
-    if poem_trimmed.lines().count() < 10 {
-        panic!("Ten hemistichs are required");
-    }
-
     // Setup for printing the reconstructed hemistichs
-    println!("Assessing the following hemistichs:");
+    println!("*** Assessing the following hemistichs ***");
 
     //
     // Primary loop
@@ -189,56 +197,39 @@ fn main() {
 
     // Address other hemistich-initial clues, if any
     if found_initial_clues {
-        // Report clues
-        println!("*** Other hemistich-initial clues ***");
-        if initial_agar {
-            println!("Found initial 'agar' followed by a consonant.");
-            println!("This suggests a short first, and long second syllable.");
-        }
-        if initial_chun {
-            println!("Found initial 'chunīn' or 'chunān'.");
-            println!("This suggests a short first, and long second syllable.");
-        }
-        if initial_kasi {
-            println!("Found initial 'kasī' followed by a consonant.");
-            println!("This suggests a short first, and long second syllable.");
-        }
-        if initial_yaki {
-            println!("Found initial 'yakī' followed by a consonant.");
-            println!("This suggests a short first, and long second syllable.");
-        }
+        initial_clues_assessment(initial_agar, initial_chun, initial_kasi, initial_yaki);
+    }
 
-        // Add new syllable length markers
-        short_first_syllable_markers += new_short_first_syllable_markers;
-        long_second_syllable_markers += new_long_second_syllable_markers;
+    // Add new syllable length markers
+    short_first_syllable_markers += new_short_first_syllable_markers;
+    long_second_syllable_markers += new_long_second_syllable_markers;
 
-        // Reassess first syllable length
-        if long_first_syllable_markers > 0 && short_first_syllable_markers > 0 {
-            println!("There are now contradictory indications of the first syllable's length.");
-            println!("If this is not an error, it suggests that the meter is probably ramal.");
-        } else if long_first_syllable_markers > 1 {
-            long_first = true;
-            println!("The first syllable in this meter now appears to be long.");
-        } else if short_first_syllable_markers > 1 {
-            short_first = true;
-            println!("The first syllable in this meter now appears to be short.");
-        } else {
-            println!("Still insufficient evidence (<2) of a long vs. short first syllable…");
-            println!("(It is easier to detect short syllables. Scant results may suggest long.)");
-        }
+    // Reassess first syllable length
+    if long_first_syllable_markers > 0 && short_first_syllable_markers > 0 {
+        println!("There are now contradictory indications of the first syllable's length.");
+        println!("If this is not an error, it suggests that the meter is probably ramal.");
+    } else if long_first_syllable_markers > 1 {
+        long_first = true;
+        println!("The first syllable in this meter now appears to be long.");
+    } else if short_first_syllable_markers > 1 {
+        short_first = true;
+        println!("The first syllable in this meter now appears to be short.");
+    } else {
+        println!("Still insufficient evidence (<2) of a long vs. short first syllable…");
+        println!("(It is easier to detect short syllables. Scant results may suggest long.)");
+    }
 
-        // Reassess second syllable length
-        if long_second_syllable_markers > 0 && short_second_syllable_markers > 0 {
-            println!("There are now contradictory indications of the second syllable's length.");
-        } else if long_second_syllable_markers > 1 {
-            long_second = true;
-            println!("The second syllable in this meter now appears to be long.");
-        } else if short_second_syllable_markers > 1 {
-            short_second = true;
-            println!("The second syllable in this meter now appears to be short.");
-        } else {
-            println!("Still insufficient evidence (<2) of a long vs. short second syllable…");
-        }
+    // Reassess second syllable length
+    if long_second_syllable_markers > 0 && short_second_syllable_markers > 0 {
+        println!("There are now contradictory indications of the second syllable's length.");
+    } else if long_second_syllable_markers > 1 {
+        long_second = true;
+        println!("The second syllable in this meter now appears to be long.");
+    } else if short_second_syllable_markers > 1 {
+        short_second = true;
+        println!("The second syllable in this meter now appears to be short.");
+    } else {
+        println!("Still insufficient evidence (<2) of a long vs. short second syllable…");
     }
 
     // Report overall assessment
@@ -571,6 +562,32 @@ fn second_syllable_assessment(
 
     // Return Boolean values
     (long_second, short_second)
+}
+
+fn initial_clues_assessment(
+    initial_agar: bool,
+    initial_chun: bool,
+    initial_kasi: bool,
+    initial_yaki: bool,
+) {
+    // Report clues
+    println!("*** Other hemistich-initial clues ***");
+    if initial_agar {
+        println!("Found initial 'agar' followed by a consonant.");
+        println!("This suggests a short first, and long second syllable.");
+    }
+    if initial_chun {
+        println!("Found initial 'chunīn' or 'chunān'.");
+        println!("This suggests a short first, and long second syllable.");
+    }
+    if initial_kasi {
+        println!("Found initial 'kasī' followed by a consonant.");
+        println!("This suggests a short first, and long second syllable.");
+    }
+    if initial_yaki {
+        println!("Found initial 'yakī' followed by a consonant.");
+        println!("This suggests a short first, and long second syllable.");
+    }
 }
 
 fn assessment(
