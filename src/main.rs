@@ -233,7 +233,7 @@ fn main() {
     }
 
     // Report overall assessment
-    assessment(
+    final_assessment(
         long_meter,
         short_meter,
         long_first,
@@ -242,6 +242,10 @@ fn main() {
         short_second,
     );
 }
+
+//
+// Analysis functions
+//
 
 fn reconstruct_hemistich(hemistich: String) -> Vec<char> {
     // Create a vector for reconstruction
@@ -468,6 +472,10 @@ fn initial_clues(hem_recon: Vec<char>) -> Vec<char> {
     clue_identifiers
 }
 
+//
+// Results functions
+//
+
 fn first_syllable_assessment(
     long_first_syllable_markers: u32,
     long_first_syllable_locs: String,
@@ -590,7 +598,7 @@ fn initial_clues_assessment(
     }
 }
 
-fn assessment(
+fn final_assessment(
     long_meter: bool,
     short_meter: bool,
     long_first: bool,
