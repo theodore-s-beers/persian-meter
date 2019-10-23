@@ -198,38 +198,42 @@ fn main() {
     // Address other hemistich-initial clues, if any
     if found_initial_clues {
         initial_clues_assessment(initial_agar, initial_chun, initial_kasi, initial_yaki);
+
+        // Add new syllable length markers
+        short_first_syllable_markers += new_short_first_syllable_markers;
+        long_second_syllable_markers += new_long_second_syllable_markers;
     }
 
-    // Add new syllable length markers
-    short_first_syllable_markers += new_short_first_syllable_markers;
-    long_second_syllable_markers += new_long_second_syllable_markers;
-
-    // Reassess first syllable length
-    if long_first_syllable_markers > 0 && short_first_syllable_markers > 0 {
-        println!("There are now contradictory indications of the first syllable's length.");
-        println!("If this is not an error, it suggests that the meter is probably ramal.");
-    } else if long_first_syllable_markers > 1 {
-        long_first = true;
-        println!("The first syllable in this meter now appears to be long.");
-    } else if short_first_syllable_markers > 1 {
-        short_first = true;
-        println!("The first syllable in this meter now appears to be short.");
-    } else {
-        println!("Still insufficient evidence (<2) of a long vs. short first syllable…");
-        println!("(It is easier to detect short syllables. Scant results may suggest long.)");
+    // Reassess first syllable length, if applicable
+    if new_short_first_syllable_markers > 0 {
+        if long_first_syllable_markers > 0 && short_first_syllable_markers > 0 {
+            println!("There are now contradictory indications of the first syllable's length.");
+            println!("If this is not an error, it suggests that the meter is probably ramal.");
+        } else if long_first_syllable_markers > 1 {
+            long_first = true;
+            println!("The first syllable in this meter now appears to be long.");
+        } else if short_first_syllable_markers > 1 {
+            short_first = true;
+            println!("The first syllable in this meter now appears to be short.");
+        } else {
+            println!("Still insufficient evidence (<2) of a long vs. short first syllable…");
+            println!("(It is easier to detect short syllables. Scant results may suggest long.)");
+        }
     }
 
-    // Reassess second syllable length
-    if long_second_syllable_markers > 0 && short_second_syllable_markers > 0 {
-        println!("There are now contradictory indications of the second syllable's length.");
-    } else if long_second_syllable_markers > 1 {
-        long_second = true;
-        println!("The second syllable in this meter now appears to be long.");
-    } else if short_second_syllable_markers > 1 {
-        short_second = true;
-        println!("The second syllable in this meter now appears to be short.");
-    } else {
-        println!("Still insufficient evidence (<2) of a long vs. short second syllable…");
+    // Reassess second syllable length, if applicable
+    if new_long_second_syllable_markers > 0 {
+        if long_second_syllable_markers > 0 && short_second_syllable_markers > 0 {
+            println!("There are now contradictory indications of the second syllable's length.");
+        } else if long_second_syllable_markers > 1 {
+            long_second = true;
+            println!("The second syllable in this meter now appears to be long.");
+        } else if short_second_syllable_markers > 1 {
+            short_second = true;
+            println!("The second syllable in this meter now appears to be short.");
+        } else {
+            println!("Still insufficient evidence (<2) of a long vs. short second syllable…");
+        }
     }
 
     // Report overall assessment
@@ -274,7 +278,11 @@ fn reconstruct_hemistich(hemistich: String) -> Vec<char> {
             '‌' => hem_recon.push(' '),
 
             // Flag anything else
-            _ => println!("Unexpected character: {}", c.escape_unicode()),
+            _ => {
+                println!("An unexpected character was found: {}", c.escape_unicode());
+                println!("Please notify the developer if you think this is a bug.");
+                panic!("Text must be in Persian/Arabic script");
+            }
         }
     }
 
@@ -611,52 +619,52 @@ fn final_assessment(
         if long_first {
             if short_second {
                 println!("Long meter, long first syllable, short second syllable?");
-                println!("Consider ramal…");
+                println!("Consider ramal.");
             } else {
                 println!("Long meter, long first syllable, indeterminate second syllable?");
-                println!("Consider, with a long second syllable, hazaj or mużāriʿ (akhrab)…");
-                println!("Consider, with a short second syllable, ramal…");
+                println!("Consider, with a long second syllable, hazaj or mużāriʿ (akhrab).");
+                println!("Consider, with a short second syllable, ramal.");
             }
         } else if short_first {
             if long_second {
                 println!("Long meter, short first syllable, long second syllable?");
-                println!("Consider, with a long third syllable, hazaj (sālim)…");
-                println!("Consider, with a short third syllable, mujtaṡṡ…");
+                println!("Consider, with a long third syllable, hazaj (sālim).");
+                println!("Consider, with a short third syllable, mujtaṡṡ.");
             } else if short_second {
                 println!("Long meter, short first syllable, short second syllable?");
-                println!("Consider ramal…");
+                println!("Consider ramal.");
             } else {
                 println!("Long meter, short first syllable, indeterminate second syllable?");
-                println!("Consider, with a long second syllable, hazaj (sālim) or mujtaṡṡ…");
-                println!("Consider, with a short second syllable, ramal…");
+                println!("Consider, with a long second syllable, hazaj (sālim) or mujtaṡṡ.");
+                println!("Consider, with a short second syllable, ramal.");
             }
         } else {
             println!("What is clearest is that the meter appears to be long.");
-            println!("If there were mixed signals about the first syllable, consider ramal…");
+            println!("If there were mixed signals about the first syllable, consider ramal.");
         }
     } else if short_meter {
         if long_first {
             if short_second {
                 println!("Short meter, long first syllable, short second syllable?");
-                println!("Consider khafīf or ramal…");
-                println!("(These can be tricky to distinguish; khafīf is more common.)");
+                println!("Consider khafīf or ramal.");
+                println!("(These can be tricky to distinguish. Khafīf is more common.)");
             } else {
                 println!("Short meter, long first syllable, indeterminate second syllable?");
-                println!("Consider, with a long second syllable, hazaj (akhrab)…");
-                println!("Consider, with a short second syllable, khafīf or ramal…");
-                println!("(The prior two can be tricky to distinguish; khafīf is more common.)");
+                println!("Consider, with a long second syllable, hazaj (akhrab).");
+                println!("Consider, with a short second syllable, khafīf or ramal.");
+                println!("(The prior two can be tricky to distinguish. Khafīf is more common.)");
             }
         } else if short_first {
             if short_second {
                 println!("Short meter, short first syllable, short second syllable?");
-                println!("This would be rare. Consider ramal…");
+                println!("This would be rare. Consider ramal.");
             } else {
                 println!("Short meter, short first syllable, indeterminate second syllable?");
-                println!("Consider hazaj (musaddas) or mutaqārib (muṡamman)…");
+                println!("Consider hazaj (musaddas) or mutaqārib (muṡamman).");
             }
         } else {
             println!("What is clearest is that the meter appears to be short.");
-            println!("If there were mixed signals about the first syllable, consider ramal…");
+            println!("If there were mixed signals about the first syllable, consider ramal.");
         }
     } else {
         println!("With the meter length unclear, no further conclusions will be drawn.");
