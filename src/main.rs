@@ -4,10 +4,13 @@ use std::fs;
 fn main() {
     // Get filename from command arguments
     let args: Vec<String> = env::args().collect();
+
     // Panic if no argument was given
     if args.len() < 2 {
         panic!("A filename must be provided");
     }
+
+    // Define variable for file path
     let filename = &args[1];
 
     // Apply a sanity check for the size of the file provided
@@ -21,7 +24,7 @@ fn main() {
     // Read the relevant file to a string
     let poem = fs::read_to_string(filename).expect("Something went wrong reading the file");
 
-    // Trim outside whitespace, and remove interior empty lines (up to three in a row)
+    // Trim outside whitespace; remove interior empty lines (up to three consecutive)
     // I know this is janky, but it works for now
     let poem_trimmed = poem
         .trim()
@@ -29,26 +32,26 @@ fn main() {
         .replace("\n\n", "\n")
         .replace("\n\n", "\n");
 
-    // Panic if the poem is too short
+    // Panic if poem is too short
     if poem_trimmed.lines().count() < 10 {
         panic!("Ten hemistichs are required");
     }
 
-    // Set up Booleans for meter length classification
+    // Initialize Booleans for meter length classification
     let mut long_meter = false;
     let mut short_meter = false;
 
-    // Set up Booleans for other clues
+    // Initialize Booleans for other clues
     let mut found_initial_clues = false;
     let mut initial_agar = false;
     let mut initial_chun = false;
     let mut initial_kasi = false;
     let mut initial_yaki = false;
 
-    // Create integer variable to count letters
+    // Initialize integer variable to count letters
     let mut total_letters: u32 = 0;
 
-    // Set up variables for checking syllable length
+    // Initialize variables for checking syllable length
     let mut long_first_syllable_markers: u32 = 0;
     let mut long_first_syllable_locs = String::new();
     let mut short_first_syllable_markers: u32 = 0;
@@ -60,7 +63,7 @@ fn main() {
     let mut short_second_syllable_markers: u32 = 0;
     let mut short_second_syllable_locs = String::new();
 
-    // Setup for printing the reconstructed hemistichs
+    // Setup for printing reconstructed hemistichs
     println!("*** Assessing the following hemistichs ***");
 
     //
@@ -76,16 +79,16 @@ fn main() {
         // Define a non-zero-indexed counter for display
         let true_hem_id = hem_id + 1;
 
-        // Reconstruct the hemistich as a vector of chars; create a version without spaces
+        // Reconstruct hemistich as a vector of chars; create a version without spaces
         let hem_recon: Vec<char> = reconstruct_hemistich(hemistich.to_string());
         let mut hem_recon_nospace = hem_recon.clone();
         hem_recon_nospace.retain(|x| *x != ' ');
 
-        // Print the reconstructed hemistich and its number
+        // Print reconstructed hemistich and its number
         let hem_recon_str: String = hem_recon.iter().collect();
         println!("{}: {}", true_hem_id, hem_recon_str);
 
-        // Count chars (excluding spaces), and add to the total
+        // Count chars (excluding spaces); add to the total
         let hem_letter_count = hem_recon_nospace.len();
         total_letters += hem_letter_count as u32;
 
@@ -124,10 +127,10 @@ fn main() {
         }
 
         // Check for hemistich-initial clues
-        // 'a' means initial "agar" followed by a consonant (after a space)
-        // 'c' means initial "chunīn" or "chunān"
-        // 'k' means initial "kasī" followed by a consonant (after a space)
-        // 'y' means initial "yakī" followed by a consonant (after a space)
+        // 'a' = initial "agar" followed by a consonant (after a space)
+        // 'c' = initial "chunīn" or "chunān"
+        // 'k' = initial "kasī" followed by a consonant (after a space)
+        // 'y' = initial "yakī" followed by a consonant (after a space)
         let initial_clues_result = initial_clues(hem_recon.clone());
         if !initial_clues_result.is_empty() {
             found_initial_clues = true;
@@ -173,7 +176,7 @@ fn main() {
         println!("The meter appears to be long (muṡamman).");
     } else if avg_letters >= 21.0 {
         println!("It is not obvious whether the meter is long or short.");
-        println!("(In this grey area, the answer is usually long.)");
+        println!("(In this gray area, the answer is usually long.)");
     } else {
         short_meter = true;
         println!("The meter appears to be short (musaddas; or mutaqārib muṡamman).");
@@ -217,7 +220,7 @@ fn main() {
             println!("The first syllable in this meter now appears to be short.");
         } else {
             println!("Still insufficient evidence (<2) of a long vs. short first syllable…");
-            println!("(It is easier to detect short syllables. Scant results may suggest long.)");
+            println!("(It's easier to detect short syllables. Scant results may suggest long.)");
         }
     }
 
@@ -286,7 +289,7 @@ fn reconstruct_hemistich(hemistich: String) -> Vec<char> {
         }
     }
 
-    // Return the reconstructed hemistich
+    // Return reconstructed hemistich
     hem_recon
 }
 
@@ -294,7 +297,7 @@ fn long_first_syllable(hem_recon: Vec<char>) -> u32 {
     // Create integer variable to count markers
     let mut long_first_syllable_markers: u32 = 0;
 
-    // Check for initial alif maddah, or alif as second character (including spaces)
+    // Check for initial alif maddah, or alif as second character (incl. spaces)
     if hem_recon[0] == 'آ' || hem_recon[1] == 'آ' || hem_recon[1] == 'ا' {
         long_first_syllable_markers += 1;
     }
@@ -304,7 +307,7 @@ fn long_first_syllable(hem_recon: Vec<char>) -> u32 {
         long_first_syllable_markers += 1;
     }
 
-    // Check for initial "az," "bar," or "har" followed by a consonant
+    // Check for initial "az," "bar," or "har" followed by consonant
     if hem_recon[0..3] == ['ا', 'ز', ' ']
         || hem_recon[0..3] == ['ب', 'ر', ' ']
         || hem_recon[0..3] == ['ه', 'ر', ' ']
@@ -326,7 +329,7 @@ fn short_first_syllable(hem_recon: Vec<char>) -> u32 {
     // Create integer variable to count markers
     let mut short_first_syllable_markers: u32 = 0;
 
-    // Check for initial "zih" followed by a consonant (after a space)
+    // Check for initial "zih" followed by consonant (after a space)
     if hem_recon[0..2] == ['ز', ' '] {
         match hem_recon[2] {
             // Consonants
@@ -337,7 +340,7 @@ fn short_first_syllable(hem_recon: Vec<char>) -> u32 {
         }
     }
 
-    // Check first three characters (including spaces)
+    // Check first three characters (incl. spaces)
     match hem_recon[0..3] {
         ['ب', 'ه', ' ']
         | ['ک', 'ه', ' ']
@@ -350,7 +353,7 @@ fn short_first_syllable(hem_recon: Vec<char>) -> u32 {
         _ => {}
     }
 
-    // Check first four characters (including spaces)
+    // Check first four characters (incl. spaces)
     match hem_recon[0..4] {
         ['ا', 'گ', 'ر', ' ']
         | ['ش', 'و', 'د', ' ']
@@ -373,12 +376,12 @@ fn long_second_syllable(hem_recon: Vec<char>, hem_recon_nospace: Vec<char>) -> u
     // Create integer variable to count markers
     let mut long_second_syllable_markers: u32 = 0;
 
-    // Check for alif maddah as the third character *or* letter
+    // Check for alif maddah as third character *or* letter
     if hem_recon[2] == 'آ' || hem_recon_nospace[2] == 'آ' {
         long_second_syllable_markers += 1;
     }
 
-    // Check for alif as the third character, following a consonant
+    // Check for alif as third character, following consonant
     if hem_recon[2] == 'ا' {
         match hem_recon[1] {
             // Consonants
@@ -397,14 +400,14 @@ fn short_second_syllable(hem_recon: Vec<char>, hem_recon_nospace: Vec<char>) -> 
     // Create integer variable to count markers
     let mut short_second_syllable_markers: u32 = 0;
 
-    // Set up vector windows including spaces
+    // Set up vector windows incl. spaces
     let hem_windows_three = hem_recon.windows(3);
 
-    // Set up vector windows excluding spaces
+    // Set up vector windows excl. spaces
     let hem_letter_windows_three = hem_recon_nospace.windows(3);
     let hem_letter_windows_four = hem_recon_nospace.windows(4);
 
-    // Test with windows of two characters (including spaces)
+    // Test with windows of two characters (incl. spaces)
     for (counter, x) in hem_windows_three.enumerate() {
         if counter == 2 || counter == 3 {
             match x {
@@ -416,14 +419,14 @@ fn short_second_syllable(hem_recon: Vec<char>, hem_recon_nospace: Vec<char>) -> 
         }
     }
 
-    // Test with windows of three characters (excluding spaces)
+    // Test with windows of three characters (excl. spaces)
     for (counter, x) in hem_letter_windows_three.enumerate() {
         if counter == 2 && (x == ['ک', 'ن', 'د'] || x == ['ش', 'و', 'د']) {
             short_second_syllable_markers += 1;
         }
     }
 
-    // Test with windows of four characters (excluding spaces)
+    // Test with windows of four characters (excl. spaces)
     for (counter, x) in hem_letter_windows_four.enumerate() {
         if counter == 2 && (x == ['چ', 'ن', 'ی', 'ن'] || x == ['چ', 'ن', 'ا', 'ن']) {
             short_second_syllable_markers += 1;
@@ -490,7 +493,7 @@ fn first_syllable_assessment(
     short_first_syllable_markers: u32,
     short_first_syllable_locs: String,
 ) -> (bool, bool) {
-    // Set up Booleans
+    // Initialize Booleans
     let mut long_first = false;
     let mut short_first = false;
 
@@ -536,7 +539,7 @@ fn second_syllable_assessment(
     short_second_syllable_markers: u32,
     short_second_syllable_locs: String,
 ) -> (bool, bool) {
-    // Set up Booleans
+    // Initialize Booleans
     let mut long_second = false;
     let mut short_second = false;
 
