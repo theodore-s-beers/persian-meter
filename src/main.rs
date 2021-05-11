@@ -274,6 +274,8 @@ fn reconstruct_hemistich(hem: String) -> Result<Vec<char>> {
             ' ' => hem_reconst.push(c),
             // ZWNJ becomes space
             '‌' => hem_reconst.push(' '),
+            // Ignore comma
+            '،' => {}
 
             // Flag anything else
             _ => {
