@@ -1,5 +1,5 @@
-use std::env;
-use std::fs;
+use regex::Regex;
+use std::{env, fs};
 
 fn main() {
     // Get filename from command arguments
@@ -24,13 +24,9 @@ fn main() {
     // Read the relevant file to a string
     let poem = fs::read_to_string(filename).expect("Something went wrong reading the file");
 
-    // Trim outside whitespace; remove interior empty lines (up to three consecutive)
-    // I know this is janky, but it works for now
-    let poem_trimmed = poem
-        .trim()
-        .replace("\n\n", "\n")
-        .replace("\n\n", "\n")
-        .replace("\n\n", "\n");
+    // Trim outside whitespace and remove interior empty lines
+    let re = Regex::new("\n{2,}").unwrap();
+    let poem_trimmed = re.replace_all(poem.trim(), "\n");
 
     // Panic if poem is too short
     if poem_trimmed.lines().count() < 10 {
@@ -166,7 +162,7 @@ fn main() {
 
     // Calculate average letters per hemistich
     let total_letters_float = f64::from(total_letters);
-    let avg_letters: f64 = total_letters_float / 10.0;
+    let avg_letters = total_letters_float / 10.0;
 
     // Report assessment of meter length
     println!("*** Meter length ***");
