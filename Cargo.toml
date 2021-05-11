@@ -1,8 +1,9 @@
 [package]
 name = "persian-meter"
-version = "0.1.3"
+version = "0.1.4"
 authors = ["Theodore Beers <theo.beers@fu-berlin.de>"]
 edition = "2018"
 
 [dependencies]
+anyhow = "1.0.40"
 regex = "1.5.4"
