@@ -5,5 +5,5 @@ authors = ["Theodore Beers <theo.beers@fu-berlin.de>"]
 edition = "2018"
 
 [dependencies]
-anyhow = "1.0.42"
+anyhow = "1.0.43"
 regex = "1.5.4"
