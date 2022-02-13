@@ -541,7 +541,7 @@ fn first_syllable_assessment(
         short_first = true;
         first_report += "The first syllable in this meter appears to be short.\n";
     } else {
-        first_report += "So far, insufficient evidence (< 2) of a long vs. short first syllable…\n";
+        first_report += "Insufficient evidence (< 2) of a long vs. short first syllable…\n";
         first_report +=
             "(It's easier to detect short syllables. Scant results may suggest long.)\n";
     }
@@ -594,8 +594,7 @@ fn second_syllable_assessment(
         short_second = true;
         second_report += "The second syllable in this meter appears to be short.\n"
     } else {
-        second_report +=
-            "So far, insufficient evidence (< 2) of a long vs. short second syllable…\n"
+        second_report += "Insufficient evidence (< 2) of a long vs. short second syllable…\n"
     }
 
     (long_second, short_second, second_report)
