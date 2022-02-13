@@ -614,16 +614,16 @@ fn final_assessment(
     if long_meter {
         // Long meter, long first syllable
         if long_first {
-            // Long meter, long first syllable, short second syllable
-            if short_second {
-                summary_report += "Long meter, long first syllable, short second syllable?\n";
-                summary_report += "Consider ramal.\n";
             // Long meter, long first syllable, long second syllable
-            } else if long_second {
+            if long_second {
                 summary_report += "Long meter, long first syllable, long second syllable?\n";
                 summary_report +=
                     "Consider, with short third and fourth syllables, hazaj (akhrab).\n";
                 summary_report += "Consider, with a long fourth syllable, mużāri‘.\n";
+            // Long meter, long first syllable, short second syllable
+            } else if short_second {
+                summary_report += "Long meter, long first syllable, short second syllable?\n";
+                summary_report += "Consider ramal.\n";
             // Long meter, long first syllable, indeterminate second syllable
             } else {
                 summary_report +=
@@ -661,10 +661,15 @@ fn final_assessment(
     } else if short_meter {
         // Short meter, long first syllable
         if long_first {
+            // Short meter, long first syllable, long second syllable
+            if long_second {
+                summary_report += "Short meter, long first syllable, long second syllable?\n";
+                summary_report += "Consider hazaj (akhrab).\n";
             // Short meter, long first syllable, short second syllable
-            if short_second {
+            } else if short_second {
                 summary_report += "Short meter, long first syllable, short second syllable?\n";
-                summary_report += "Consider ramal or khafīf.\n";
+                summary_report += "Consider, with a long third syllable, ramal or khafīf.\n";
+                summary_report += "If the third syllable is short, enjoy the puzzle!\n";
             // Short meter, long first syllable, indeterminate second syllable
             } else {
                 summary_report +=
@@ -674,15 +679,20 @@ fn final_assessment(
             }
         // Short meter, short first syllable
         } else if short_first {
+            // Short meter, short first syllable, long second syllable
+            if long_second {
+                summary_report += "Short meter, short first syllable, long second syllable?\n";
+                summary_report += "Consider hazaj or mutaqārib.\n";
             // Short meter, short first syllable, short second syllable
-            if short_second {
+            } else if short_second {
                 summary_report += "Short meter, short first syllable, short second syllable?\n";
-                summary_report += "This would be rare. Consider ramal.\n";
+                summary_report += "This would be rare. Consider ramal or khafīf.\n";
             // Short meter, short first syllable, indeterminate second syllable
             } else {
                 summary_report +=
                     "Short meter, short first syllable, indeterminate second syllable?\n";
-                summary_report += "Consider hazaj (musaddas) or mutaqārib (muṡamman).\n";
+                summary_report += "Consider, with a long second syllable, hazaj or mutaqārib.\n";
+                summary_report += "Consider, with a short second syllable, ramal or khafīf.\n";
             }
         // Short meter, indeterminate first syllable
         } else {
@@ -691,7 +701,7 @@ fn final_assessment(
             summary_report += "If so, consider ramal or khafīf.\n";
         }
     // Indeterminate meter length
-    // This currently can't be reached, but I'll leave it just in case
+    // This currently can't be reached; I'll leave it for possible future use
     } else {
         summary_report += "With the meter length unclear, no further conclusions will be drawn.\n";
     }
