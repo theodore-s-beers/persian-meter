@@ -2,8 +2,9 @@
 name = "persian-meter"
 version = "0.1.4"
 authors = ["Theodore Beers <theo.beers@fu-berlin.de>"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 anyhow = "1.0.53"
+clap = { version = "3.0.14", features = ["derive"] }
 regex = "1.5.4"

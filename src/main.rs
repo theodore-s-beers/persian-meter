@@ -1,80 +1,84 @@
 use anyhow::{anyhow, Result};
+use clap::Parser;
 use regex::Regex;
-use std::{env, fs};
+use std::fs;
+
+/// A program that attempts to find the meter of a Persian poem
+#[derive(Parser, Debug)]
+#[clap(author, version, about, long_about = None)]
+struct Args {
+    /// Path of input text file
+    #[clap()]
+    input: String,
+}
 
 fn main() -> Result<()> {
-    // Get filename from command arguments
-    let args: Vec<String> = env::args().collect();
+    //
+    // Argument parsing etc.
+    //
 
-    // Return error if no argument was given
-    if args.len() < 2 {
-        return Err(anyhow!("A filename must be provided"));
-    }
-
-    // Define variable for file path
-    let filename = &args[1];
+    // Parse args; get input file path
+    let args = Args::parse();
+    let path = &args.input;
 
     // Apply a sanity check for the size of the file provided
-    let file_size = fs::metadata(filename)?.len();
+    let file_size = fs::metadata(path)?.len();
     if file_size > 10_000 {
         return Err(anyhow!("The file appears suspiciously large"));
     }
 
-    // Read the relevant file to a string
-    let poem = fs::read_to_string(filename)?;
+    // Read file to string
+    let poem = fs::read_to_string(path)?;
 
     // Trim outside whitespace and remove interior empty lines
     let re = Regex::new("\n{2,}").unwrap();
     let poem_trimmed = re.replace_all(poem.trim(), "\n");
 
-    // Return error if poem is too short
-    if poem_trimmed.lines().count() < 10 {
+    // Error out if poem is too short
+    let total_hemistichs = poem_trimmed.lines().count();
+    if total_hemistichs < 10 {
         return Err(anyhow!("At least ten hemistichs are required"));
     }
 
-    // Initialize Booleans for meter length classification
+    //
+    // Global variables
+    //
+
+    // Booleans for meter length classification
     let mut long_meter = false;
     let mut short_meter = false;
 
-    // Initialize Booleans for other clues
-    let mut found_initial_clues = false;
-    let mut initial_agar = false;
-    let mut initial_chun = false;
-    let mut initial_kasi = false;
-    let mut initial_yaki = false;
-
-    // Initialize integer variable to count letters
+    // Variable to count letters
     let mut total_letters: u32 = 0;
 
-    // Initialize variables for checking syllable length
+    // Variables for checking individual syllable lengths
     let mut long_first_syl_markers: u32 = 0;
     let mut long_first_syl_locs = String::new();
     let mut short_first_syl_markers: u32 = 0;
     let mut short_first_syl_locs = String::new();
-    let mut new_short_first_syl_markers: u32 = 0;
     let mut long_second_syl_markers: u32 = 0;
     let mut long_second_syl_locs = String::new();
-    let mut new_long_second_syl_markers: u32 = 0;
     let mut short_second_syl_markers: u32 = 0;
     let mut short_second_syl_locs = String::new();
+
+    //
+    // Transition to primary loop
+    //
 
     // Setup for printing reconstructed hemistichs
     println!("*** Assessing the following hemistichs ***");
 
-    //
-    // Primary loop
-    //
-
     for (i, hem) in poem_trimmed.lines().enumerate() {
-        // Take only the first ten hemistichs
-        if i > 9 {
+        // Take at most forty hemistichs (i.e., twenty lines)
+        if i > 39 {
             continue;
         }
 
-        // Define a non-zero-indexed counter for display
+        // Non-zero-indexed counter for display
         let hem_no = i + 1;
 
-        // Reconstruct hemistich as a vector of chars; create a version without spaces
+        // Reconstruct hemistich as vector of chars
+        // Make a second version without spaces
         let hem_reconst: Vec<char> = reconstruct_hemistich(hem.to_string())?;
         let mut hem_nospace = hem_reconst.clone();
         hem_nospace.retain(|x| *x != ' ');
@@ -84,71 +88,58 @@ fn main() -> Result<()> {
         println!("{}: {}", hem_no, hem_reconst_str);
 
         // Count chars (excluding spaces); add to the total
-        let hem_letter_count = hem_nospace.len();
-        total_letters += hem_letter_count as u32;
+        let hem_letter_count = hem_nospace.len() as u32;
+        total_letters += hem_letter_count;
 
         // Check for long first syllable
-        let long_first_syl_results = long_first_syllable(&hem_reconst);
-        if long_first_syl_results > 0 {
-            long_first_syl_markers += long_first_syl_results;
+        if long_first_syllable(&hem_reconst) {
+            long_first_syl_markers += 1;
             long_first_syl_locs.push_str(&hem_no.to_string());
             long_first_syl_locs.push_str(", ");
         }
 
         // Check for short first syllable
-        let short_first_syllable_results = short_first_syllable(&hem_reconst);
-        if short_first_syllable_results > 0 {
-            short_first_syl_markers += short_first_syllable_results;
+        if short_first_syllable(&hem_reconst) {
+            short_first_syl_markers += 1;
             short_first_syl_locs.push_str(&hem_no.to_string());
             short_first_syl_locs.push_str(", ");
         }
 
         // Check for long second syllable
-        let long_second_syllable_results = long_second_syllable(&hem_reconst, &hem_nospace);
-        if long_second_syllable_results > 0 {
-            long_second_syl_markers += long_second_syllable_results;
+        if long_second_syllable(&hem_reconst) {
+            long_second_syl_markers += 1;
             long_second_syl_locs.push_str(&hem_no.to_string());
             long_second_syl_locs.push_str(", ");
         }
 
         // Check for short second syllable
-        let short_second_syllable_results = short_second_syllable(&hem_reconst, &hem_nospace);
-        if short_second_syllable_results > 0 {
-            short_second_syl_markers += short_second_syllable_results;
+        if short_second_syllable(&hem_reconst, &hem_nospace) {
+            short_second_syl_markers += 1;
             short_second_syl_locs.push_str(&hem_no.to_string());
             short_second_syl_locs.push_str(", ");
         }
 
-        // Check for hemistich-initial clues
-        // 'a' = initial "agar" followed by a consonant (after a space)
-        // 'c' = initial "chunīn" or "chunān"
-        // 'k' = initial "kasī" followed by a consonant (after a space)
-        // 'y' = initial "yakī" followed by a consonant (after a space)
-        let initial_clues_results = initial_clues(&hem_reconst);
-        if !initial_clues_results.is_empty() {
-            found_initial_clues = true;
-            for c in initial_clues_results.iter() {
-                match *c {
-                    'a' => {
-                        initial_agar = true;
-                        new_long_second_syl_markers += 1;
-                    }
-                    'c' => {
-                        initial_chun = true;
-                        new_long_second_syl_markers += 1;
-                    }
-                    'k' => {
-                        initial_kasi = true;
-                        new_short_first_syl_markers += 1;
-                        new_long_second_syl_markers += 1;
-                    }
-                    'y' => {
-                        initial_yaki = true;
-                        new_short_first_syl_markers += 1;
-                        new_long_second_syl_markers += 1;
-                    }
-                    _ => {}
+        if let Some(result) = initial_clues(&hem_reconst) {
+            match result {
+                "chunin/an" | "kasi" | "yaki" => {
+                    short_first_syl_markers += 1;
+                    short_first_syl_locs.push_str(&hem_no.to_string());
+                    short_first_syl_locs.push_str(", ");
+
+                    long_second_syl_markers += 1;
+                    long_second_syl_locs.push_str(&hem_no.to_string());
+                    long_second_syl_locs.push_str(", ");
                 }
+                "chist" => {
+                    long_first_syl_markers += 1;
+                    long_first_syl_locs.push_str(&hem_no.to_string());
+                    long_first_syl_locs.push_str(", ");
+
+                    short_second_syl_markers += 1;
+                    short_second_syl_locs.push_str(&hem_no.to_string());
+                    short_second_syl_locs.push_str(", ");
+                }
+                _ => {}
             }
         }
     }
@@ -158,8 +149,15 @@ fn main() -> Result<()> {
     //
 
     // Calculate average letters per hemistich
-    let total_letters_float = f64::from(total_letters);
-    let avg_letters = total_letters_float / 10.0;
+    let total_letters_float = total_letters as f64;
+
+    let total_hemistichs_float = if total_hemistichs > 40 {
+        40.0
+    } else {
+        total_hemistichs as f64
+    };
+
+    let avg_letters = total_letters_float / total_hemistichs_float;
 
     // Report assessment of meter length
     println!("*** Meter length ***");
@@ -176,7 +174,7 @@ fn main() -> Result<()> {
     }
 
     // Report assessment of first syllable length
-    let (mut long_first, mut short_first) = first_syllable_assessment(
+    let (long_first, short_first) = first_syllable_assessment(
         long_first_syl_markers,
         long_first_syl_locs,
         short_first_syl_markers,
@@ -184,53 +182,12 @@ fn main() -> Result<()> {
     );
 
     // Report assessment of second syllable length
-    let (mut long_second, mut short_second) = second_syllable_assessment(
+    let (long_second, short_second) = second_syllable_assessment(
         long_second_syl_markers,
         long_second_syl_locs,
         short_second_syl_markers,
         short_second_syl_locs,
     );
-
-    // Address other hemistich-initial clues, if any
-    if found_initial_clues {
-        initial_clues_assessment(initial_agar, initial_chun, initial_kasi, initial_yaki);
-
-        // Add new syllable length markers
-        short_first_syl_markers += new_short_first_syl_markers;
-        long_second_syl_markers += new_long_second_syl_markers;
-    }
-
-    // Reassess first syllable length, if applicable
-    if new_short_first_syl_markers > 0 {
-        if long_first_syl_markers > 0 && short_first_syl_markers > 0 {
-            println!("There are now contradictory indications of the first syllable's length.");
-            println!("If this is not an error, it suggests that the meter is probably ramal.");
-        } else if long_first_syl_markers > 1 {
-            long_first = true;
-            println!("The first syllable in this meter now appears to be long.");
-        } else if short_first_syl_markers > 1 {
-            short_first = true;
-            println!("The first syllable in this meter now appears to be short.");
-        } else {
-            println!("Still insufficient evidence (<2) of a long vs. short first syllable…");
-            println!("(It's easier to detect short syllables. Scant results may suggest long.)");
-        }
-    }
-
-    // Reassess second syllable length, if applicable
-    if new_long_second_syl_markers > 0 {
-        if long_second_syl_markers > 0 && short_second_syl_markers > 0 {
-            println!("There are now contradictory indications of the second syllable's length.");
-        } else if long_second_syl_markers > 1 {
-            long_second = true;
-            println!("The second syllable in this meter now appears to be long.");
-        } else if short_second_syl_markers > 1 {
-            short_second = true;
-            println!("The second syllable in this meter now appears to be short.");
-        } else {
-            println!("Still insufficient evidence (<2) of a long vs. short second syllable…");
-        }
-    }
 
     // Report overall assessment
     final_assessment(
@@ -253,7 +210,7 @@ fn reconstruct_hemistich(hem: String) -> Result<Vec<char>> {
     // Create a vec for reconstruction
     let mut hem_reconst = Vec::new();
 
-    // Go through one character at a time, passing valid input to the reconstruction
+    // Review one character at a time, passing through valid input
     for c in hem.trim().chars() {
         match c {
             // ٰVowels
@@ -264,18 +221,21 @@ fn reconstruct_hemistich(hem: String) -> Result<Vec<char>> {
             | 'ن' | 'ه' => hem_reconst.push(c),
             // Alif hamzah
             'أ' => hem_reconst.push('ا'),
-            // Vav hamzah
+            // Vāv hamzah
             'ؤ' => hem_reconst.push('و'),
-            // Yāʾ hamzah
+            // Yā’ hamzah
             'ئ' => hem_reconst.push('ی'),
-            // Ignore hamzah diacritic
-            'ٔ' => {}
-            // Spaces can stay (in this version)
+            // Replace tā’ marbūṭah with hā’
+            'ة' => hem_reconst.push('ه'),
+            // Ignore hamzah diacritic, fatḥah, shaddah, ḍammah, kasrah, sukūn,
+            // tanwīn fatḥah, dagger alif
+            'ٔ' | 'َ' | 'ّ' | 'ُ' | 'ِ' | 'ْ' | 'ً' | 'ٰ' => {}
+            // Spaces can stay (for now)
             ' ' => hem_reconst.push(c),
             // ZWNJ becomes space
             '‌' => hem_reconst.push(' '),
-            // Ignore comma
-            '،' => {}
+            // Ignore comma, question mark, or exclamation mark
+            '،' | '؟' | '!' => {}
 
             // Flag anything else
             _ => {
@@ -289,109 +249,156 @@ fn reconstruct_hemistich(hem: String) -> Result<Vec<char>> {
     Ok(hem_reconst)
 }
 
-fn long_first_syllable(hem_reconst: &[char]) -> u32 {
-    // Mutable u32 to count markers
-    let mut long_first_syl_markers: u32 = 0;
-
-    // Check for initial alif maddah, or alif as second character (incl. spaces)
-    if hem_reconst[0] == 'آ' || hem_reconst[1] == 'آ' || hem_reconst[1] == 'ا' {
-        long_first_syl_markers += 1;
+fn long_first_syllable(hem_reconst: &[char]) -> bool {
+    // Check for initial alif maddah, or alif as second character
+    if hem_reconst[0] == 'آ' || hem_reconst[1] == 'ا' {
+        return true;
     }
+
+    let initial_three = &hem_reconst[0..3];
 
     // Check for initial "īn"
-    if hem_reconst[0..3] == ['ا', 'ی', 'ن'] {
-        long_first_syl_markers += 1;
+    if initial_three == ['ا', 'ی', 'ن'] {
+        return true;
     }
 
-    // Check for initial "az," "bar," or "har" followed by consonant
-    if hem_reconst[0..3] == ['ا', 'ز', ' ']
-        || hem_reconst[0..3] == ['ب', 'ر', ' ']
-        || hem_reconst[0..3] == ['ه', 'ر', ' ']
+    // Check for initial "khwā-"
+    // I found only one word that would break this: "khavāniq"
+    // But that's vanishingly rare
+    if initial_three == ['خ', 'و', 'ا'] {
+        return true;
+    }
+
+    let consonants = [
+        'ء', 'ب', 'پ', 'ت', 'ث', 'ج', 'چ', 'ح', 'خ', 'د', 'ذ', 'ر', 'ز', 'ژ', 'س', 'ش', 'ص', 'ض',
+        'ط', 'ظ', 'ع', 'غ', 'ف', 'ق', 'ک', 'گ', 'ل', 'م', 'ن', 'ه',
+    ];
+
+    // Check for initial "az," "bar," "har," "gar," or "ay" followed by a
+    // consonant
+    if (initial_three == ['ا', 'ز', ' ']
+        || initial_three == ['ب', 'ر', ' ']
+        || initial_three == ['ه', 'ر', ' ']
+        || initial_three == ['گ', 'ر', ' ']
+        || initial_three == ['ا', 'ی', ' '])
+        && consonants.contains(&hem_reconst[3])
     {
-        match hem_reconst[3] {
-            // Consonants
-            'ء' | 'ب' | 'پ' | 'ت' | 'ث' | 'ج' | 'چ' | 'ح' | 'خ' | 'د' | 'ذ' | 'ر' | 'ز' | 'ژ'
-            | 'س' | 'ش' | 'ص' | 'ض' | 'ط' | 'ظ' | 'ع' | 'غ' | 'ف' | 'ق' | 'ک' | 'گ' | 'ل' | 'م'
-            | 'ن' | 'ه' => long_first_syl_markers += 1,
-            _ => {}
-        }
+        return true;
     }
 
-    long_first_syl_markers
+    false
 }
 
-fn short_first_syllable(hem_reconst: &[char]) -> u32 {
-    // Mutable u32 to count markers
-    let mut short_first_syl_markers: u32 = 0;
+fn short_first_syllable(hem_reconst: &[char]) -> bool {
+    let consonants = [
+        'ء', 'ب', 'پ', 'ت', 'ث', 'ج', 'چ', 'ح', 'خ', 'د', 'ذ', 'ر', 'ز', 'ژ', 'س', 'ش', 'ص', 'ض',
+        'ط', 'ظ', 'ع', 'غ', 'ف', 'ق', 'ک', 'گ', 'ل', 'م', 'ن', 'ه',
+    ];
 
-    // Check for initial "zih" followed by consonant (after a space)
-    if hem_reconst[0..2] == ['ز', ' '] {
-        match hem_reconst[2] {
-            // Consonants
-            'ء' | 'ب' | 'پ' | 'ت' | 'ث' | 'ج' | 'چ' | 'ح' | 'خ' | 'د' | 'ذ' | 'ر' | 'ز' | 'ژ'
-            | 'س' | 'ش' | 'ص' | 'ض' | 'ط' | 'ظ' | 'ع' | 'غ' | 'ف' | 'ق' | 'ک' | 'گ' | 'ل' | 'م'
-            | 'ن' | 'ه' => short_first_syl_markers += 1,
-            _ => {}
-        }
+    // Check for initial "zih" followed by a consonant (after a space)
+    if hem_reconst[0..2] == ['ز', ' '] && consonants.contains(&hem_reconst[2]) {
+        return true;
     }
 
-    // Check first three characters (incl. spaces)
+    // Check first three characters
+    // Initial "bih" (risky?), "kih," "chu," or "chih" followed by a space
+    // Initial "kujā," "hamī," "khudā," "agar," "chirā," or "digar"
     match hem_reconst[0..3] {
         ['ب', 'ه', ' ']
         | ['ک', 'ه', ' ']
         | ['چ', 'و', ' ']
         | ['چ', 'ه', ' ']
-        | ['ن', 'ه', ' ']
         | ['ک', 'ج', 'ا']
         | ['ه', 'م', 'ی']
-        | ['خ', 'د', 'ا'] => short_first_syl_markers += 1,
+        | ['خ', 'د', 'ا']
+        | ['ا', 'گ', 'ر']
+        | ['چ', 'ر', 'ا']
+        | ['د', 'گ', 'ر'] => return true,
         _ => {}
     }
 
-    // Check first four characters (incl. spaces)
+    // Check first four characters
+    // Initial "shavad," "magar," "marā,"" "turā," or "hamah" followed by a
+    // space
     match hem_reconst[0..4] {
-        ['ا', 'گ', 'ر', ' ']
-        | ['ش', 'و', 'د', ' ']
+        ['ش', 'و', 'د', ' ']
         | ['م', 'گ', 'ر', ' ']
-        | ['چ', 'ر', 'ا', ' ']
         | ['م', 'ر', 'ا', ' ']
         | ['ت', 'ر', 'ا', ' ']
-        | ['د', 'گ', 'ر', ' ']
-        | ['ه', 'م', 'ه', ' ']
-        | ['چ', 'ن', 'ا', 'ن']
-        | ['چ', 'ن', 'ی', 'ن'] => short_first_syl_markers += 1,
+        | ['ه', 'م', 'ه', ' '] => return true,
         _ => {}
     }
 
-    short_first_syl_markers
+    false
 }
 
-fn long_second_syllable(hem_reconst: &[char], hem_nospace: &[char]) -> u32 {
-    // Mutable u32 to count markers
-    let mut long_second_syl_markers: u32 = 0;
-
-    // Check for alif maddah as third character *or* letter
-    if hem_reconst[2] == 'آ' || hem_nospace[2] == 'آ' {
-        long_second_syl_markers += 1;
+fn long_second_syllable(hem_reconst: &[char]) -> bool {
+    // Check for alif maddah as the third character
+    // This is probably ok, but how often would it come up?
+    if hem_reconst[2] == 'آ' {
+        return true;
     }
+
+    let consonants = [
+        'ء', 'ب', 'پ', 'ت', 'ث', 'ج', 'چ', 'ح', 'خ', 'د', 'ذ', 'ر', 'ز', 'ژ', 'س', 'ش', 'ص', 'ض',
+        'ط', 'ظ', 'ع', 'غ', 'ف', 'ق', 'ک', 'گ', 'ل', 'م', 'ن', 'ه',
+    ];
 
     // Check for alif as third character, following consonant
-    if hem_reconst[2] == 'ا' {
-        match hem_reconst[1] {
-            // Consonants
-            'ء' | 'ب' | 'پ' | 'ت' | 'ث' | 'ج' | 'چ' | 'ح' | 'خ' | 'د' | 'ذ' | 'ر' | 'ز' | 'ژ'
-            | 'س' | 'ش' | 'ص' | 'ض' | 'ط' | 'ظ' | 'ع' | 'غ' | 'ف' | 'ق' | 'ک' | 'گ' | 'ل' | 'م'
-            | 'ن' | 'ه' => long_second_syl_markers += 1,
-            _ => {}
-        }
+    if hem_reconst[2] == 'ا' && consonants.contains(&hem_reconst[1]) {
+        return true;
     }
 
-    long_second_syl_markers
+    // Check for initial "agar" followed by consonant
+    if hem_reconst[0..4] == ['ا', 'گ', 'ر', ' '] && consonants.contains(&hem_reconst[4]) {
+        return true;
+    }
+
+    // Check for initial "bāshad" or "sāqī" followed by consonant
+    if (hem_reconst[0..5] == ['ب', 'ا', 'ش', 'د', ' ']
+        || hem_reconst[0..5] == ['س', 'ا', 'ق', 'ی', ' '])
+        && consonants.contains(&hem_reconst[5])
+    {
+        return true;
+    }
+
+    if hem_reconst[1..3] == ['ا', ' '] && long_first_syllable(&hem_reconst[3..]) {
+        return true;
+    }
+
+    if hem_reconst[0..3] == ['ا', 'ی', ' ']
+        && consonants.contains(&hem_reconst[3])
+        && long_first_syllable(&hem_reconst[3..])
+    {
+        return true;
+    }
+
+    false
 }
 
-fn short_second_syllable(hem_reconst: &[char], hem_nospace: &[char]) -> u32 {
-    // Mutable u32 to count markers
-    let mut short_second_syl_markers: u32 = 0;
+fn short_second_syllable(hem_reconst: &[char], hem_nospace: &[char]) -> bool {
+    if (hem_reconst[0..3] == ['ب', 'ه', ' '] || hem_reconst[0..3] == ['ک', 'ه', ' '])
+        && short_first_syllable(&hem_reconst[3..])
+    {
+        return true;
+    }
+
+    if hem_reconst[1..3] == ['ا', ' '] && short_first_syllable(&hem_reconst[3..]) {
+        return true;
+    }
+
+    if hem_reconst[0..5] == ['ه', 'ر', 'ک', 'ه', ' ']
+        || hem_reconst[0..6] == ['ه', 'ر', ' ', 'ک', 'ه', ' ']
+        || hem_reconst[0..5] == ['آ', 'ن', 'ک', 'ه', ' ']
+        || hem_reconst[0..6] == ['آ', 'ن', ' ', 'ک', 'ه', ' ']
+        || hem_reconst[0..5] == ['گ', 'ر', 'چ', 'ه', ' ']
+        || hem_reconst[0..6] == ['گ', 'ر', ' ', 'چ', 'ه', ' ']
+    {
+        return true;
+    }
+
+    // I don't like this stuff with windows; should probably eliminate it
+    // It's a strangely general approach to pick up a few specific cases
 
     // Set up vector windows incl. spaces
     let hem_windows_three = hem_reconst.windows(3);
@@ -402,10 +409,10 @@ fn short_second_syllable(hem_reconst: &[char], hem_nospace: &[char]) -> u32 {
 
     // Test with windows of two letters (plus a space)
     for (i, x) in hem_windows_three.enumerate() {
-        if i == 2 || i == 3 {
+        if i == 2 {
             match x {
                 ['ک', 'ه', ' '] | ['چ', 'ه', ' '] | ['ب', 'ه', ' '] | ['چ', 'و', ' '] => {
-                    short_second_syl_markers += 1
+                    return true
                 }
                 _ => {}
             }
@@ -415,64 +422,47 @@ fn short_second_syllable(hem_reconst: &[char], hem_nospace: &[char]) -> u32 {
     // Test with windows of three letters (excl. spaces)
     for (i, x) in letter_windows_three.enumerate() {
         if i == 2 && (x == ['ک', 'ن', 'د'] || x == ['ش', 'و', 'د']) {
-            short_second_syl_markers += 1;
+            return true;
         }
     }
 
     // Test with windows of four letters (excl. spaces)
     for (i, x) in letter_windows_four.enumerate() {
         if i == 2 && (x == ['چ', 'ن', 'ی', 'ن'] || x == ['چ', 'ن', 'ا', 'ن']) {
-            short_second_syl_markers += 1;
+            return true;
         }
     }
 
-    short_second_syl_markers
+    false
 }
 
-fn initial_clues(hem_reconst: &[char]) -> Vec<char> {
-    // Create vector to hold clue identifiers
-    let mut clue_ids = Vec::new();
+fn initial_clues(hem_reconst: &[char]) -> Option<&str> {
+    let consonants = [
+        'ء', 'ب', 'پ', 'ت', 'ث', 'ج', 'چ', 'ح', 'خ', 'د', 'ذ', 'ر', 'ز', 'ژ', 'س', 'ش', 'ص', 'ض',
+        'ط', 'ظ', 'ع', 'غ', 'ف', 'ق', 'ک', 'گ', 'ل', 'م', 'ن', 'ه',
+    ];
 
-    // Check for initial "agar" followed by consonant (ID 'a')
-    if hem_reconst[0..4] == ['ا', 'گ', 'ر', ' '] {
-        match hem_reconst[4] {
-            // Consonants
-            'ء' | 'ب' | 'پ' | 'ت' | 'ث' | 'ج' | 'چ' | 'ح' | 'خ' | 'د' | 'ذ' | 'ر' | 'ز' | 'ژ'
-            | 'س' | 'ش' | 'ص' | 'ض' | 'ط' | 'ظ' | 'ع' | 'غ' | 'ف' | 'ق' | 'ک' | 'گ' | 'ل' | 'م'
-            | 'ن' | 'ه' => clue_ids.push('a'),
-            _ => {}
-        }
+    // Check for initial "kasī" followed by consonant
+    if hem_reconst[0..4] == ['ک', 'س', 'ی', ' '] && consonants.contains(&hem_reconst[4]) {
+        return Some("kasi");
     }
 
-    // Check for initial "kasī" followed by consonant (ID 'k')
-    if hem_reconst[0..4] == ['ک', 'س', 'ی', ' '] {
-        match hem_reconst[4] {
-            // Consonants
-            'ء' | 'ب' | 'پ' | 'ت' | 'ث' | 'ج' | 'چ' | 'ح' | 'خ' | 'د' | 'ذ' | 'ر' | 'ز' | 'ژ'
-            | 'س' | 'ش' | 'ص' | 'ض' | 'ط' | 'ظ' | 'ع' | 'غ' | 'ف' | 'ق' | 'ک' | 'گ' | 'ل' | 'م'
-            | 'ن' | 'ه' => clue_ids.push('k'),
-            _ => {}
-        }
+    // Check for initial "yakī" followed by consonant
+    if hem_reconst[0..4] == ['ی', 'ک', 'ی', ' '] && consonants.contains(&hem_reconst[4]) {
+        return Some("yaki");
     }
 
-    // Check for initial "yakī" followed by consonant (ID 'y')
-    if hem_reconst[0..4] == ['ی', 'ک', 'ی', ' '] {
-        match hem_reconst[4] {
-            // Consonants
-            'ء' | 'ب' | 'پ' | 'ت' | 'ث' | 'ج' | 'چ' | 'ح' | 'خ' | 'د' | 'ذ' | 'ر' | 'ز' | 'ژ'
-            | 'س' | 'ش' | 'ص' | 'ض' | 'ط' | 'ظ' | 'ع' | 'غ' | 'ف' | 'ق' | 'ک' | 'گ' | 'ل' | 'م'
-            | 'ن' | 'ه' => clue_ids.push('y'),
-            _ => {}
-        }
-    }
-
-    // Check for initial "chunīn" or "chunān" (ID 'c')
+    // Check for initial "chunīn" or "chunān"
     if hem_reconst[0..4] == ['چ', 'ن', 'ی', 'ن'] || hem_reconst[0..4] == ['چ', 'ن', 'ا', 'ن']
     {
-        clue_ids.push('c');
+        return Some("chunin/an");
     }
 
-    clue_ids
+    if hem_reconst[0..5] == ['چ', 'ی', 'س', 'ت', ' '] {
+        return Some("chist");
+    }
+
+    None
 }
 
 //
@@ -573,31 +563,6 @@ fn second_syllable_assessment(
     (long_second, short_second)
 }
 
-fn initial_clues_assessment(
-    initial_agar: bool,
-    initial_chun: bool,
-    initial_kasi: bool,
-    initial_yaki: bool,
-) {
-    println!("*** Other hemistich-initial clues ***");
-    if initial_agar {
-        println!("Found initial 'agar' followed by a consonant.");
-        println!("This suggests a short first, and long second syllable.");
-    }
-    if initial_chun {
-        println!("Found initial 'chunīn' or 'chunān'.");
-        println!("This suggests a short first, and long second syllable.");
-    }
-    if initial_kasi {
-        println!("Found initial 'kasī' followed by a consonant.");
-        println!("This suggests a short first, and long second syllable.");
-    }
-    if initial_yaki {
-        println!("Found initial 'yakī' followed by a consonant.");
-        println!("This suggests a short first, and long second syllable.");
-    }
-}
-
 fn final_assessment(
     long_meter: bool,
     short_meter: bool,
@@ -612,9 +577,12 @@ fn final_assessment(
             if short_second {
                 println!("Long meter, long first syllable, short second syllable?");
                 println!("Consider ramal.");
+            } else if long_second {
+                println!("Long meter, long first syllable, long second syllable?");
+                println!("Consider hazaj or mużāri‘ (akhrab).");
             } else {
                 println!("Long meter, long first syllable, indeterminate second syllable?");
-                println!("Consider, with a long second syllable, hazaj or mużāriʿ (akhrab).");
+                println!("Consider, with a long second syllable, hazaj or mużāri‘ (akhrab).");
                 println!("Consider, with a short second syllable, ramal.");
             }
         } else if short_first {
@@ -639,12 +607,12 @@ fn final_assessment(
             if short_second {
                 println!("Short meter, long first syllable, short second syllable?");
                 println!("Consider khafīf or ramal.");
-                println!("(These can be tricky to distinguish. Khafīf is more common.)");
+                println!("(Khafīf may be more common as a short meter.)");
             } else {
                 println!("Short meter, long first syllable, indeterminate second syllable?");
                 println!("Consider, with a long second syllable, hazaj (akhrab).");
                 println!("Consider, with a short second syllable, khafīf or ramal.");
-                println!("(The prior two can be tricky to distinguish. Khafīf is more common.)");
+                println!("(Khafīf may be more common than ramal as a short meter.)");
             }
         } else if short_first {
             if short_second {
