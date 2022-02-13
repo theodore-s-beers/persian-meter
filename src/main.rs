@@ -61,12 +61,12 @@ fn main() -> Result<()> {
     let mut short_second_syl_markers: u32 = 0;
     let mut short_second_syl_locs = String::new();
 
-    //
-    // Transition to primary loop
-    //
+    // Variable for results report to be printed or saved
+    let mut results_report = String::from("*** Assessing the following hemistichs ***\n");
 
-    // Setup for printing reconstructed hemistichs
-    println!("*** Assessing the following hemistichs ***");
+    //
+    // Primary loop
+    //
 
     for (i, hem) in poem_trimmed.lines().enumerate() {
         // Take at most forty hemistichs (i.e., twenty lines)
@@ -83,9 +83,9 @@ fn main() -> Result<()> {
         let mut hem_nospace = hem_reconst.clone();
         hem_nospace.retain(|x| *x != ' ');
 
-        // Print reconstructed hemistich and its number
+        // Record reconstructed hemistich and its number
         let hem_reconst_str: String = hem_reconst.iter().collect();
-        println!("{}: {}", hem_no, hem_reconst_str);
+        results_report += &format!("{}: {}\n", hem_no, hem_reconst_str);
 
         // Count chars (excluding spaces); add to the total
         let hem_letter_count = hem_nospace.len() as u32;
@@ -160,37 +160,47 @@ fn main() -> Result<()> {
     let avg_letters = total_letters_float / total_hemistichs_float;
 
     // Report assessment of meter length
-    println!("*** Meter length ***");
-    println!("Average letters per hemistich: {:.1}", avg_letters);
-    if avg_letters >= 23.0 {
+    results_report += "*** Meter length ***\n";
+    results_report += &format!("Average letters per hemistich: {:.1}\n", avg_letters);
+
+    if avg_letters >= 23.5 {
         long_meter = true;
-        println!("The meter appears to be long (muṡamman).");
+        results_report += "The meter appears to be long (muṡamman).\n";
+    } else if avg_letters >= 22.5 {
+        long_meter = true;
+        results_report += "The meter appears to be long (muṡamman).\n";
+        results_report += "(But this is pretty short for a long meter!)\n";
     } else if avg_letters >= 21.0 {
-        println!("It's not obvious whether the meter is long or short.");
-        println!("(In this gray area, the answer is usually long.)");
+        short_meter = true;
+        results_report += "The meter appears to be short (musaddas; or mutaqārib muṡamman).\n";
+        results_report += "(But this is pretty long for a short meter!)\n";
     } else {
         short_meter = true;
-        println!("The meter appears to be short (musaddas; or mutaqārib muṡamman).");
+        results_report += "The meter appears to be short (musaddas; or mutaqārib muṡamman).\n";
     }
 
     // Report assessment of first syllable length
-    let (long_first, short_first) = first_syllable_assessment(
+    let (long_first, short_first, first_report) = first_syllable_assessment(
         long_first_syl_markers,
         long_first_syl_locs,
         short_first_syl_markers,
         short_first_syl_locs,
     );
 
+    results_report += &first_report;
+
     // Report assessment of second syllable length
-    let (long_second, short_second) = second_syllable_assessment(
+    let (long_second, short_second, second_report) = second_syllable_assessment(
         long_second_syl_markers,
         long_second_syl_locs,
         short_second_syl_markers,
         short_second_syl_locs,
     );
 
+    results_report += &second_report;
+
     // Report overall assessment
-    final_assessment(
+    let summary_report = final_assessment(
         long_meter,
         short_meter,
         long_first,
@@ -198,6 +208,9 @@ fn main() -> Result<()> {
         long_second,
         short_second,
     );
+
+    results_report += &summary_report;
+    print!("{}", results_report);
 
     Ok(())
 }
@@ -239,9 +252,9 @@ fn reconstruct_hemistich(hem: String) -> Result<Vec<char>> {
 
             // Flag anything else
             _ => {
-                println!("An unexpected character was found: {}", c.escape_unicode());
-                println!("Please notify the developer if you think this is a bug.");
-                return Err(anyhow!("Text must be in Persian/Arabic script"));
+                eprintln!("An unexpected character was found: {}", c.escape_unicode());
+                eprintln!("Please notify the developer if you think this is a bug.");
+                return Err(anyhow!("Text must be fully in Persian/Arabic script"));
             }
         }
     }
@@ -494,23 +507,24 @@ fn first_syllable_assessment(
     long_first_syl_locs: String,
     short_first_syl_markers: u32,
     short_first_syl_locs: String,
-) -> (bool, bool) {
-    // Initialize bools
+) -> (bool, bool, String) {
+    // Initialize variables for return values
     let mut long_first = false;
     let mut short_first = false;
 
+    let mut first_report = String::from("*** First syllable length ***\n");
+
     // Report indications of first syllable length
-    println!("*** First syllable length ***");
     if long_first_syl_markers > 0 {
-        println!(
-            "Indications of a long first syllable: {} (at {})",
+        first_report += &format!(
+            "Indications of a long first syllable: {} (at {})\n",
             long_first_syl_markers,
             long_first_syl_locs.trim_end_matches(", ")
         );
     }
     if short_first_syl_markers > 0 {
-        println!(
-            "Indications of a short first syllable: {} (at {})",
+        first_report += &format!(
+            "Indications of a short first syllable: {} (at {})\n",
             short_first_syl_markers,
             short_first_syl_locs.trim_end_matches(", ")
         );
@@ -518,20 +532,21 @@ fn first_syllable_assessment(
 
     // Report assessment of first syllable length
     if long_first_syl_markers > 0 && short_first_syl_markers > 0 {
-        println!("There are contradictory indications of a long vs. short first syllable.");
-        println!("If this is not an error, it suggests that the meter is probably ramal.");
+        first_report += "There are contradictory indications of a long vs. short first syllable.\n";
+        first_report += "If this is not an error, it suggests that the meter is probably ramal.\n";
     } else if long_first_syl_markers > 1 {
         long_first = true;
-        println!("The first syllable in this meter appears to be long.");
+        first_report += "The first syllable in this meter appears to be long.\n";
     } else if short_first_syl_markers > 1 {
         short_first = true;
-        println!("The first syllable in this meter appears to be short.");
+        first_report += "The first syllable in this meter appears to be short.\n";
     } else {
-        println!("So far, insufficient evidence (< 2) of a long vs. short first syllable…");
-        println!("(It's easier to detect short syllables. Scant results may suggest long.)");
+        first_report += "So far, insufficient evidence (< 2) of a long vs. short first syllable…\n";
+        first_report +=
+            "(It's easier to detect short syllables. Scant results may suggest long.)\n";
     }
 
-    (long_first, short_first)
+    (long_first, short_first, first_report)
 }
 
 fn second_syllable_assessment(
@@ -539,48 +554,51 @@ fn second_syllable_assessment(
     long_second_syl_locs: String,
     short_second_syl_markers: u32,
     short_second_syl_locs: String,
-) -> (bool, bool) {
-    // Initialize bools
+) -> (bool, bool, String) {
+    // Initialize variables for return values
     let mut long_second = false;
     let mut short_second = false;
 
+    let mut second_report = String::from("*** Second syllable length ***\n");
+
     // Report indications of second syllable length
-    println!("*** Second syllable length ***");
     if long_second_syl_markers > 0 {
-        println!(
-            "Suggestions of a long second syllable: {} (at {})",
+        second_report += &format!(
+            "Suggestions of a long second syllable: {} (at {})\n",
             long_second_syl_markers,
             long_second_syl_locs.trim_end_matches(", ")
         );
         if long_second_syl_markers == 1 {
-            println!("(Be careful with this; one result is not much.)");
+            second_report += "(Be careful with this; one result is not much.)\n";
         }
     }
     if short_second_syl_markers > 0 {
-        println!(
-            "Suggestions of a short second syllable: {} (at {})",
+        second_report += &format!(
+            "Suggestions of a short second syllable: {} (at {})\n",
             short_second_syl_markers,
             short_second_syl_locs.trim_end_matches(", ")
         );
         if short_second_syl_markers == 1 {
-            println!("(Be careful with this; one result is not much.)");
+            second_report += "(Be careful with this; one result is not much.)\n";
         }
     }
 
     // Report assessment of second syllable length
     if long_second_syl_markers > 0 && short_second_syl_markers > 0 {
-        println!("There are contradictory indications of a long vs. short second syllable.");
+        second_report +=
+            "There are contradictory indications of a long vs. short second syllable.\n"
     } else if long_second_syl_markers > 1 {
         long_second = true;
-        println!("The second syllable in this meter appears to be long.");
+        second_report += "The second syllable in this meter appears to be long.\n";
     } else if short_second_syl_markers > 1 {
         short_second = true;
-        println!("The second syllable in this meter appears to be short.");
+        second_report += "The second syllable in this meter appears to be short.\n"
     } else {
-        println!("So far, insufficient evidence (< 2) of a long vs. short second syllable…");
+        second_report +=
+            "So far, insufficient evidence (< 2) of a long vs. short second syllable…\n"
     }
 
-    (long_second, short_second)
+    (long_second, short_second, second_report)
 }
 
 fn final_assessment(
@@ -590,65 +608,96 @@ fn final_assessment(
     short_first: bool,
     long_second: bool,
     short_second: bool,
-) {
-    println!("*** Overall assessment ***");
+) -> String {
+    let mut summary_report = String::from("*** Overall assessment ***\n");
+
+    // Long meter
     if long_meter {
+        // Long meter, long first syllable
         if long_first {
+            // Long meter, long first syllable, short second syllable
             if short_second {
-                println!("Long meter, long first syllable, short second syllable?");
-                println!("Consider ramal.");
+                summary_report += "Long meter, long first syllable, short second syllable?\n";
+                summary_report += "Consider ramal.\n";
+            // Long meter, long first syllable, long second syllable
             } else if long_second {
-                println!("Long meter, long first syllable, long second syllable?");
-                println!("Consider, with short third and fourth syllables, hazaj (akhrab).");
-                println!("Consider, with a long fourth syllable, mużāri‘.");
+                summary_report += "Long meter, long first syllable, long second syllable?\n";
+                summary_report +=
+                    "Consider, with short third and fourth syllables, hazaj (akhrab).\n";
+                summary_report += "Consider, with a long fourth syllable, mużāri‘.\n";
+            // Long meter, long first syllable, indeterminate second syllable
             } else {
-                println!("Long meter, long first syllable, indeterminate second syllable?");
-                println!("Consider, with a long second syllable, hazaj (akhrab) or mużāri‘.");
-                println!("Consider, with a short second syllable, ramal.");
+                summary_report +=
+                    "Long meter, long first syllable, indeterminate second syllable?\n";
+                summary_report +=
+                    "Consider, with a long second syllable, hazaj (akhrab) or mużāri‘.\n";
+                summary_report += "Consider, with a short second syllable, ramal.\n";
             }
+        // Long meter, short first syllable
         } else if short_first {
+            // Long meter, short first syllable, long second syllable
             if long_second {
-                println!("Long meter, short first syllable, long second syllable?");
-                println!("Consider, with a long third syllable, hazaj (sālim).");
-                println!("Consider, with a short third syllable, mujtaṡṡ.");
+                summary_report += "Long meter, short first syllable, long second syllable?\n";
+                summary_report += "Consider, with a long third syllable, hazaj (sālim).\n";
+                summary_report += "Consider, with a short third syllable, mujtaṡṡ.\n";
+            // Long meter, short first syllable, short second syllable
             } else if short_second {
-                println!("Long meter, short first syllable, short second syllable?");
-                println!("Consider ramal.");
+                summary_report += "Long meter, short first syllable, short second syllable?\n";
+                summary_report += "Consider ramal.\n";
+            // Long meter, short first syllable, indeterminate second syllable
             } else {
-                println!("Long meter, short first syllable, indeterminate second syllable?");
-                println!("Consider, with a long second syllable, hazaj (sālim) or mujtaṡṡ.");
-                println!("Consider, with a short second syllable, ramal.");
+                summary_report +=
+                    "Long meter, short first syllable, indeterminate second syllable?\n";
+                summary_report +=
+                    "Consider, with a long second syllable, hazaj (sālim) or mujtaṡṡ.\n";
+                summary_report += "Consider, with a short second syllable, ramal.\n";
             }
+        // Long meter, indeterminate first syllable
         } else {
-            println!("What is clearest is that the meter appears to be long.");
-            println!("If there were mixed signals about the first syllable, consider ramal.");
+            summary_report += "What is clearest is that the meter appears to be long.\n";
+            summary_report +=
+                "If there were mixed signals about the first syllable, consider ramal.\n";
         }
+    // Short meter
     } else if short_meter {
+        // Short meter, long first syllable
         if long_first {
+            // Short meter, long first syllable, short second syllable
             if short_second {
-                println!("Short meter, long first syllable, short second syllable?");
-                println!("Consider khafīf or ramal.");
-                println!("(Khafīf may be more common as a short meter.)");
+                summary_report += "Short meter, long first syllable, short second syllable?\n";
+                summary_report += "Consider khafīf or ramal.\n";
+                summary_report += "(Khafīf may be more common as a short meter.)\n";
+            // Short meter, long first syllable, indeterminate second syllable
             } else {
-                println!("Short meter, long first syllable, indeterminate second syllable?");
-                println!("Consider, with a long second syllable, hazaj (akhrab).");
-                println!("Consider, with a short second syllable, khafīf or ramal.");
-                println!("(Khafīf may be more common than ramal as a short meter.)");
+                summary_report +=
+                    "Short meter, long first syllable, indeterminate second syllable?\n";
+                summary_report += "Consider, with a long second syllable, hazaj (akhrab).\n";
+                summary_report += "Consider, with a short second syllable, khafīf or ramal.\n";
+                summary_report += "(Khafīf may be more common than ramal as a short meter.)\n";
             }
+        // Short meter, short first syllable
         } else if short_first {
+            // Short meter, short first syllable, short second syllable
             if short_second {
-                println!("Short meter, short first syllable, short second syllable?");
-                println!("This would be rare. Consider ramal.");
+                summary_report += "Short meter, short first syllable, short second syllable?\n";
+                summary_report += "This would be rare. Consider ramal.\n";
+            // Short meter, short first syllable, indeterminate second syllable
             } else {
-                println!("Short meter, short first syllable, indeterminate second syllable?");
-                println!("Consider hazaj (musaddas) or mutaqārib (muṡamman).");
+                summary_report +=
+                    "Short meter, short first syllable, indeterminate second syllable?\n";
+                summary_report += "Consider hazaj (musaddas) or mutaqārib (muṡamman).\n";
             }
+        // Short meter, indeterminate first syllable
         } else {
-            println!("What is clearest is that the meter appears to be short.");
-            println!("Were there mixed signals about the first syllable?");
-            println!("If so, consider ramal or khafīf.")
+            summary_report += "What is clearest is that the meter appears to be short.\n";
+            summary_report += "Were there mixed signals about the first syllable?\n";
+            summary_report += "If so, consider ramal or khafīf.\n";
         }
+    // Indeterminate meter length
+    // This currently can't be reached, but I'll leave it just in case
     } else {
-        println!("With the meter length unclear, no further conclusions will be drawn.");
+        summary_report += "With the meter length unclear, no further conclusions will be drawn.\n";
     }
+
+    summary_report
 }
