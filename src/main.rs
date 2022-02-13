@@ -665,15 +665,13 @@ fn final_assessment(
             // Short meter, long first syllable, short second syllable
             if short_second {
                 summary_report += "Short meter, long first syllable, short second syllable?\n";
-                summary_report += "Consider khafīf or ramal.\n";
-                summary_report += "(Khafīf may be more common as a short meter.)\n";
+                summary_report += "Consider ramal or khafīf.\n";
             // Short meter, long first syllable, indeterminate second syllable
             } else {
                 summary_report +=
                     "Short meter, long first syllable, indeterminate second syllable?\n";
                 summary_report += "Consider, with a long second syllable, hazaj (akhrab).\n";
-                summary_report += "Consider, with a short second syllable, khafīf or ramal.\n";
-                summary_report += "(Khafīf may be more common than ramal as a short meter.)\n";
+                summary_report += "Consider, with a short second syllable, ramal or khafīf.\n";
             }
         // Short meter, short first syllable
         } else if short_first {
