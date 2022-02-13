@@ -130,7 +130,7 @@ fn main() -> Result<()> {
                     long_second_syl_locs.push_str(&hem_no.to_string());
                     long_second_syl_locs.push_str(", ");
                 }
-                "chist" => {
+                "chist" | "dust" | "nist" | "hamchu" => {
                     long_first_syl_markers += 1;
                     long_first_syl_locs.push_str(&hem_no.to_string());
                     long_first_syl_locs.push_str(", ");
@@ -301,13 +301,15 @@ fn short_first_syllable(hem_reconst: &[char]) -> bool {
     }
 
     // Check first three characters
-    // Initial "bih" (risky?), "kih," "chu," or "chih" followed by a space
+    // Initial "bih" (risky?), "kih," "chu," "chih," or "nah" (risky?) followed
+    // by a space
     // Initial "kujā," "hamī," "khudā," "agar," "chirā," or "digar"
     match hem_reconst[0..3] {
         ['ب', 'ه', ' ']
         | ['ک', 'ه', ' ']
         | ['چ', 'و', ' ']
         | ['چ', 'ه', ' ']
+        | ['ن', 'ه', ' ']
         | ['ک', 'ج', 'ا']
         | ['ه', 'م', 'ی']
         | ['خ', 'د', 'ا']
@@ -333,28 +335,25 @@ fn short_first_syllable(hem_reconst: &[char]) -> bool {
 }
 
 fn long_second_syllable(hem_reconst: &[char]) -> bool {
-    // Check for alif maddah as the third character
-    // This is probably ok, but how often would it come up?
-    if hem_reconst[2] == 'آ' {
-        return true;
-    }
-
     let consonants = [
         'ء', 'ب', 'پ', 'ت', 'ث', 'ج', 'چ', 'ح', 'خ', 'د', 'ذ', 'ر', 'ز', 'ژ', 'س', 'ش', 'ص', 'ض',
         'ط', 'ظ', 'ع', 'غ', 'ف', 'ق', 'ک', 'گ', 'ل', 'م', 'ن', 'ه',
     ];
 
-    // Check for alif as third character, following consonant
-    if hem_reconst[2] == 'ا' && consonants.contains(&hem_reconst[1]) {
+    // Check for alif as third character, non-word-initial, not after vāv
+    // Should maybe work on better criteria for alif qua long vowel marker
+    if hem_reconst[2] == 'ا' && hem_reconst[1] != ' ' && hem_reconst[1] != 'و' {
         return true;
     }
 
     // Check for initial "agar" followed by consonant
+    // This would already have been flagged for a short first syllable
     if hem_reconst[0..4] == ['ا', 'گ', 'ر', ' '] && consonants.contains(&hem_reconst[4]) {
         return true;
     }
 
     // Check for initial "bāshad" or "sāqī" followed by consonant
+    // These would already have been flagged for a long first syllable
     if (hem_reconst[0..5] == ['ب', 'ا', 'ش', 'د', ' ']
         || hem_reconst[0..5] == ['س', 'ا', 'ق', 'ی', ' '])
         && consonants.contains(&hem_reconst[5])
@@ -362,12 +361,27 @@ fn long_second_syllable(hem_reconst: &[char]) -> bool {
         return true;
     }
 
+    // If the opening word is anything like "tā," "bā," "yā," etc., check if
+    // what follows is clearly another long syllable
     if hem_reconst[1..3] == ['ا', ' '] && long_first_syllable(&hem_reconst[3..]) {
         return true;
     }
 
-    if hem_reconst[0..3] == ['ا', 'ی', ' ']
+    // If the opening word is "ay," "gar," or "az," followed by a consonant,
+    // check if what follows is clearly another long syllable
+    if (hem_reconst[0..3] == ['ا', 'ی', ' ']
+        || hem_reconst[0..3] == ['گ', 'ر', ' ']
+        || hem_reconst[0..3] == ['ا', 'ز', ' '])
         && consonants.contains(&hem_reconst[3])
+        && long_first_syllable(&hem_reconst[3..])
+    {
+        return true;
+    }
+
+    // If the opening word is "bih" or "kih" (short), check if what follows is
+    // clearly a long syllable
+    // Is this legit? It's worth a shot
+    if (hem_reconst[0..3] == ['ب', 'ه', ' '] || hem_reconst[0..3] == ['ک', 'ه', ' '])
         && long_first_syllable(&hem_reconst[3..])
     {
         return true;
@@ -377,60 +391,49 @@ fn long_second_syllable(hem_reconst: &[char]) -> bool {
 }
 
 fn short_second_syllable(hem_reconst: &[char], hem_nospace: &[char]) -> bool {
+    // If the opening word is "bih" or "kih" (very common), check if what
+    // follows is clearly another short syllable
     if (hem_reconst[0..3] == ['ب', 'ه', ' '] || hem_reconst[0..3] == ['ک', 'ه', ' '])
         && short_first_syllable(&hem_reconst[3..])
     {
         return true;
     }
 
+    // If the opening word is anything like "tā," "bā," "yā," etc., check if
+    // what follows is clearly a short syllable
     if hem_reconst[1..3] == ['ا', ' '] && short_first_syllable(&hem_reconst[3..]) {
         return true;
     }
 
-    if hem_reconst[0..5] == ['ه', 'ر', 'ک', 'ه', ' ']
-        || hem_reconst[0..6] == ['ه', 'ر', ' ', 'ک', 'ه', ' ']
-        || hem_reconst[0..5] == ['آ', 'ن', 'ک', 'ه', ' ']
-        || hem_reconst[0..6] == ['آ', 'ن', ' ', 'ک', 'ه', ' ']
-        || hem_reconst[0..5] == ['گ', 'ر', 'چ', 'ه', ' ']
-        || hem_reconst[0..6] == ['گ', 'ر', ' ', 'چ', 'ه', ' ']
+    let initial_five = &hem_reconst[0..5];
+    let initial_six = &hem_reconst[0..6];
+
+    // Some of the below imply a long first syllable that would not have been
+    // caught otherwise. Such cases should be dealt with instead in "initial
+    // clues"
+
+    // Check for initial "har-kih," "ān-kih," "gar-chih," or "ān-chih" (with or
+    // without a space)
+    if initial_five == ['ه', 'ر', 'ک', 'ه', ' ']
+        || initial_six == ['ه', 'ر', ' ', 'ک', 'ه', ' ']
+        || initial_five == ['آ', 'ن', 'ک', 'ه', ' ']
+        || initial_six == ['آ', 'ن', ' ', 'ک', 'ه', ' ']
+        || initial_five == ['گ', 'ر', 'چ', 'ه', ' ']
+        || initial_six == ['گ', 'ر', ' ', 'چ', 'ه', ' ']
+        || initial_five == ['آ', 'ن', 'چ', 'ه', ' ']
+        || initial_six == ['آ', 'ن', ' ', 'چ', 'ه', ' ']
     {
         return true;
     }
 
-    // I don't like this stuff with windows; should probably eliminate it
-    // It's a strangely general approach to pick up a few specific cases
+    // Used to check here for near-initial "kunad" or "shavad"
+    // Could try to bring that back somehow?
 
-    // Set up vector windows incl. spaces
-    let hem_windows_three = hem_reconst.windows(3);
-
-    // Set up vector windows excl. spaces
-    let letter_windows_three = hem_nospace.windows(3);
-    let letter_windows_four = hem_nospace.windows(4);
-
-    // Test with windows of two letters (plus a space)
-    for (i, x) in hem_windows_three.enumerate() {
-        if i == 2 {
-            match x {
-                ['ک', 'ه', ' '] | ['چ', 'ه', ' '] | ['ب', 'ه', ' '] | ['چ', 'و', ' '] => {
-                    return true
-                }
-                _ => {}
-            }
-        }
-    }
-
-    // Test with windows of three letters (excl. spaces)
-    for (i, x) in letter_windows_three.enumerate() {
-        if i == 2 && (x == ['ک', 'ن', 'د'] || x == ['ش', 'و', 'د']) {
-            return true;
-        }
-    }
-
-    // Test with windows of four letters (excl. spaces)
-    for (i, x) in letter_windows_four.enumerate() {
-        if i == 2 && (x == ['چ', 'ن', 'ی', 'ن'] || x == ['چ', 'ن', 'ا', 'ن']) {
-            return true;
-        }
+    // Check for "chunīn" or "chunān" starting at the third letter (with or
+    // without a space). I think this is valid
+    if hem_nospace[2..6] == ['چ', 'ن', 'ی', 'ن'] || hem_nospace[2..6] == ['چ', 'ن', 'ا', 'ن']
+    {
+        return true;
     }
 
     false
@@ -442,24 +445,41 @@ fn initial_clues(hem_reconst: &[char]) -> Option<&str> {
         'ط', 'ظ', 'ع', 'غ', 'ف', 'ق', 'ک', 'گ', 'ل', 'م', 'ن', 'ه',
     ];
 
+    let initial_four = &hem_reconst[0..4];
+    let initial_five = &hem_reconst[0..5];
+    let initial_six = &hem_reconst[0..6];
+
     // Check for initial "kasī" followed by consonant
-    if hem_reconst[0..4] == ['ک', 'س', 'ی', ' '] && consonants.contains(&hem_reconst[4]) {
+    if initial_four == ['ک', 'س', 'ی', ' '] && consonants.contains(&hem_reconst[4]) {
         return Some("kasi");
     }
 
     // Check for initial "yakī" followed by consonant
-    if hem_reconst[0..4] == ['ی', 'ک', 'ی', ' '] && consonants.contains(&hem_reconst[4]) {
+    if initial_four == ['ی', 'ک', 'ی', ' '] && consonants.contains(&hem_reconst[4]) {
         return Some("yaki");
     }
 
     // Check for initial "chunīn" or "chunān"
-    if hem_reconst[0..4] == ['چ', 'ن', 'ی', 'ن'] || hem_reconst[0..4] == ['چ', 'ن', 'ا', 'ن']
-    {
+    if initial_four == ['چ', 'ن', 'ی', 'ن'] || initial_four == ['چ', 'ن', 'ا', 'ن'] {
         return Some("chunin/an");
     }
 
-    if hem_reconst[0..5] == ['چ', 'ی', 'س', 'ت', ' '] {
+    if initial_four == ['چ', 'ی', 'س', 'ت'] {
         return Some("chist");
+    }
+
+    if initial_four == ['د', 'و', 'س', 'ت'] {
+        return Some("dust");
+    }
+
+    // Otherwise we could get tripped up by "nayistān"
+    if initial_five == ['ن', 'ی', 'س', 'ت', ' '] {
+        return Some("nist");
+    }
+
+    if initial_five == ['ه', 'م', 'چ', 'و', ' '] || initial_six == ['ه', 'م', ' ', 'چ', 'و', ' ']
+    {
+        return Some("hamchu");
     }
 
     None
@@ -507,7 +527,7 @@ fn first_syllable_assessment(
         short_first = true;
         println!("The first syllable in this meter appears to be short.");
     } else {
-        println!("So far, insufficient evidence (<2) of a long vs. short first syllable…");
+        println!("So far, insufficient evidence (< 2) of a long vs. short first syllable…");
         println!("(It's easier to detect short syllables. Scant results may suggest long.)");
     }
 
@@ -533,7 +553,7 @@ fn second_syllable_assessment(
             long_second_syl_locs.trim_end_matches(", ")
         );
         if long_second_syl_markers == 1 {
-            println!("(Be careful with this; it's a bit error-prone.)");
+            println!("(Be careful with this; one result is not much.)");
         }
     }
     if short_second_syl_markers > 0 {
@@ -543,7 +563,7 @@ fn second_syllable_assessment(
             short_second_syl_locs.trim_end_matches(", ")
         );
         if short_second_syl_markers == 1 {
-            println!("(Be careful with this; it's a bit error-prone.)");
+            println!("(Be careful with this; one result is not much.)");
         }
     }
 
@@ -557,7 +577,7 @@ fn second_syllable_assessment(
         short_second = true;
         println!("The second syllable in this meter appears to be short.");
     } else {
-        println!("So far, insufficient evidence (<2) of a long vs. short second syllable…");
+        println!("So far, insufficient evidence (< 2) of a long vs. short second syllable…");
     }
 
     (long_second, short_second)
@@ -579,10 +599,11 @@ fn final_assessment(
                 println!("Consider ramal.");
             } else if long_second {
                 println!("Long meter, long first syllable, long second syllable?");
-                println!("Consider hazaj or mużāri‘ (akhrab).");
+                println!("Consider, with short third and fourth syllables, hazaj (akhrab).");
+                println!("Consider, with a long fourth syllable, mużāri‘.");
             } else {
                 println!("Long meter, long first syllable, indeterminate second syllable?");
-                println!("Consider, with a long second syllable, hazaj or mużāri‘ (akhrab).");
+                println!("Consider, with a long second syllable, hazaj (akhrab) or mużāri‘.");
                 println!("Consider, with a short second syllable, ramal.");
             }
         } else if short_first {
@@ -624,7 +645,8 @@ fn final_assessment(
             }
         } else {
             println!("What is clearest is that the meter appears to be short.");
-            println!("If there were mixed signals about the first syllable, consider ramal.");
+            println!("Were there mixed signals about the first syllable?");
+            println!("If so, consider ramal or khafīf.")
         }
     } else {
         println!("With the meter length unclear, no further conclusions will be drawn.");

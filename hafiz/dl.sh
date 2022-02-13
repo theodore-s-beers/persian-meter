@@ -2,7 +2,7 @@
 
 set -Eeuo pipefail
 
-for i in {11..20}; do
+for i in {21..50}; do
 	curl -fs "https://ganjoor.net/hafez/ghazal/sh$i/" |
 		pup ".b" |
 		pandoc -f html -t plain >"$i.txt"
