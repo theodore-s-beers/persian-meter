@@ -136,7 +136,7 @@ fn main() -> Result<()> {
                     long_second_syl_locs.push_str(&hem_no.to_string());
                     long_second_syl_locs.push_str(", ");
                 }
-                "chist" | "dust" | "nist" | "ham-chu" => {
+                "chist" | "dust" | "nist" | "ham-chu" | "kist" => {
                     long_first_syl_markers += 1;
                     long_first_syl_locs.push_str(&hem_no.to_string());
                     long_first_syl_locs.push_str(", ");
@@ -304,10 +304,10 @@ fn long_first_syllable(hem_reconst: &[char]) -> bool {
         return true;
     }
 
-    // Check for initial "az," "bar," "har," "gar," or "ay" followed by a
-    // consonant
+    // Check for initial "az," "har," "gar," or "ay" followed by a consonant
+    // Used to check here for "bar," but it caused a problem -- it can be
+    // "bar-i" with iżāfah
     if (initial_three == ['ا', 'ز', ' ']
-        || initial_three == ['ب', 'ر', ' ']
         || initial_three == ['ه', 'ر', ' ']
         || initial_three == ['گ', 'ر', ' ']
         || initial_three == ['ا', 'ی', ' '])
@@ -360,9 +360,13 @@ fn short_first_syllable(hem_reconst: &[char]) -> bool {
 }
 
 fn long_second_syllable(hem_reconst: &[char]) -> bool {
+    let second = hem_reconst[1];
+
     // Check for alif as third character, non-word-initial, not after vāv
+    // Also need to make sure the preceding character isn't another alif
+    // This caused a problem with "nā-umīd" -- second syllable is short!
     // Should maybe work on better criteria for alif qua long vowel marker
-    if hem_reconst[2] == 'ا' && hem_reconst[1] != ' ' && hem_reconst[1] != 'و' {
+    if hem_reconst[2] == 'ا' && second != ' ' && second != 'و' && second != 'ا' {
         return true;
     }
 
@@ -374,11 +378,10 @@ fn long_second_syllable(hem_reconst: &[char]) -> bool {
 
     let initial_five = &hem_reconst[0..5];
 
-    // Check for initial "bāshad" or "sāqī" followed by a consonant
-    // These would already have been flagged for a long first syllable
-    if (initial_five == ['ب', 'ا', 'ش', 'د', ' '] || initial_five == ['س', 'ا', 'ق', 'ی', ' '])
-        && CONSONANTS.contains(&hem_reconst[5])
-    {
+    // Check for initial "bāshad" followed by a consonant
+    // This would already have been flagged for a long first syllable
+    // Used to check here for initial "sāqī," but that can be spoiled by iżāfah
+    if initial_five == ['ب', 'ا', 'ش', 'د', ' '] && CONSONANTS.contains(&hem_reconst[5]) {
         return true;
     }
 
@@ -439,7 +442,8 @@ fn short_second_syllable(hem_reconst: &[char], hem_nospace: &[char]) -> bool {
 
     // Check for initial "har-kih," "ān-kih," "gar-chih," or "ān-chih" (with or
     // without a space)
-    // "Gar-chih" has now caused a problem -- "chih" can be long?
+    // "Gar-chih" has now caused a problem -- "chih" can be long? Should I get
+    // rid of it? But this seems very rare
     if initial_five == ['ه', 'ر', 'ک', 'ه', ' ']
         || initial_six == ['ه', 'ر', ' ', 'ک', 'ه', ' ']
         || initial_five == ['آ', 'ن', 'ک', 'ه', ' ']
@@ -517,6 +521,12 @@ fn initial_clues(hem_reconst: &[char]) -> Option<&str> {
     // This should always scan long-long, regardless of what follows
     if initial_five == ['چ', 'ن', 'د', 'ا', 'ن'] {
         return Some("chandan");
+    }
+
+    // Check for initial "kīst"
+    // This should always scan long-short, regardless of what follows
+    if initial_four == ['ک', 'ی', 'س', 'ت'] {
+        return Some("kist");
     }
 
     None
