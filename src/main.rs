@@ -174,6 +174,7 @@ fn main() -> Result<()> {
         short_meter = true;
         results_report += "The meter appears to be short (musaddas; or mutaqārib muṡamman).\n";
         results_report += "(But this is pretty long for a short meter!)\n";
+        // println!("file: {}; avg. letters: {:.1}", path, avg_letters);
     } else {
         short_meter = true;
         results_report += "The meter appears to be short (musaddas; or mutaqārib muṡamman).\n";
