@@ -610,15 +610,15 @@ fn second_syllable_assessment(
     // Report assessment of second syllable length
     if long_second_syl_markers > 0 && short_second_syl_markers > 0 {
         second_report +=
-            "There are contradictory indications of a long vs. short second syllable.\n"
+            "There are contradictory indications of a long vs. short second syllable.\n";
     } else if long_second_syl_markers > 1 {
         long_second = true;
         second_report += "The second syllable in this meter appears to be long.\n";
     } else if short_second_syl_markers > 1 {
         short_second = true;
-        second_report += "The second syllable in this meter appears to be short.\n"
+        second_report += "The second syllable in this meter appears to be short.\n";
     } else {
-        second_report += "Insufficient evidence (< 2) of a long vs. short second syllable…\n"
+        second_report += "Insufficient evidence (< 2) of a long vs. short second syllable…\n";
     }
 
     (long_second, short_second, second_report)
