@@ -170,6 +170,7 @@ fn main() -> Result<()> {
         long_meter = true;
         results_report += "The meter appears to be long (muṡamman).\n";
         results_report += "(But this is pretty short for a long meter!)\n";
+        // println!("file: {}; avg. letters: {:.1}", path, avg_letters);
     } else if avg_letters >= 21.0 {
         short_meter = true;
         results_report += "The meter appears to be short (musaddas; or mutaqārib muṡamman).\n";
@@ -178,6 +179,7 @@ fn main() -> Result<()> {
     } else {
         short_meter = true;
         results_report += "The meter appears to be short (musaddas; or mutaqārib muṡamman).\n";
+        // println!("file: {}; avg. letters: {:.1}", path, avg_letters);
     }
 
     // Report assessment of first syllable length
@@ -242,8 +244,8 @@ fn reconstruct_hemistich(hem: String) -> Result<Vec<char>> {
             // Replace tā’ marbūṭah with hā’
             'ة' => hem_reconst.push('ه'),
             // Ignore hamzah diacritic, fatḥah, shaddah, ḍammah, kasrah, sukūn,
-            // tanwīn fatḥah, dagger alif
-            'ٔ' | 'َ' | 'ّ' | 'ُ' | 'ِ' | 'ْ' | 'ً' | 'ٰ' => {}
+            // tanwīn fatḥah, dagger alif, tanwīn kasrah, tanwīn ḍammah
+            'ٔ' | 'َ' | 'ّ' | 'ُ' | 'ِ' | 'ْ' | 'ً' | 'ٰ' | 'ٍ' | 'ٌ' => {}
             // Spaces can stay (for now)
             ' ' => hem_reconst.push(c),
             // ZWNJ becomes space
