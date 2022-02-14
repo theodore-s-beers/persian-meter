@@ -127,7 +127,7 @@ fn main() -> Result<()> {
         // Check for other hemistich-initial clues
         if let Some(result) = initial_clues(&hem_reconst) {
             match result {
-                "chunin/an" | "kasi" | "yaki" => {
+                "kasi" | "yaki" => {
                     short_first_syl_markers += 1;
                     short_first_syl_locs.push_str(&hem_no.to_string());
                     short_first_syl_locs.push_str(", ");
@@ -330,7 +330,8 @@ fn short_first_syllable(hem_reconst: &[char]) -> bool {
     // Check first three characters
     // Initial "bih" (risky?), "kih," "chu," "chih," or "nah" (risky?) followed
     // by a space
-    // Initial "kujā," "hamī," "khudā," "agar," "chirā," or "digar"
+    // Initial "kujā," "hamī," "khudā," "agar," "chirā," or "digar," with or
+    // without a space
     match hem_reconst[0..3] {
         ['ب', 'ه', ' ']
         | ['ک', 'ه', ' ']
@@ -348,13 +349,15 @@ fn short_first_syllable(hem_reconst: &[char]) -> bool {
 
     // Check first four characters
     // Initial "shavad," "magar," "marā,"" "turā," or "hamah" followed by a
-    // space
+    // space; or initial "chunīn" or "chunān," with or without a space
     match hem_reconst[0..4] {
         ['ش', 'و', 'د', ' ']
         | ['م', 'گ', 'ر', ' ']
         | ['م', 'ر', 'ا', ' ']
         | ['ت', 'ر', 'ا', ' ']
-        | ['ه', 'م', 'ه', ' '] => return true,
+        | ['ه', 'م', 'ه', ' ']
+        | ['چ', 'ن', 'ی', 'ن']
+        | ['چ', 'ن', 'ا', 'ن'] => return true,
         _ => {}
     }
 
@@ -415,6 +418,14 @@ fn long_second_syllable(hem_reconst: &[char]) -> bool {
         return true;
     }
 
+    let initial_four = &hem_reconst[0..4];
+
+    // Check for initial "chunīn" or "chunān," with or without a space
+    // This will also have been flagged for a short first syllable
+    if initial_four == ['چ', 'ن', 'ی', 'ن'] || initial_four == ['چ', 'ن', 'ا', 'ن'] {
+        return true;
+    }
+
     false
 }
 
@@ -465,7 +476,19 @@ fn short_second_syllable(hem_reconst: &[char], hem_nospace: &[char]) -> bool {
 
     // Check for "chunīn" or "chunān" starting at the third letter (with or
     // without a space). I think this is valid
+    // But I may get rid of this approach. I don't like it somehow
     if two_six == ['چ', 'ن', 'ی', 'ن'] || two_six == ['چ', 'ن', 'ا', 'ن'] {
+        return true;
+    }
+
+    let initial_four = &hem_reconst[0..4];
+
+    // If the opening word is "īn," followed by a space and then a consonant,
+    // check if what follows is clearly a short syllable
+    if initial_four == ['ا', 'ی', 'ن', ' ']
+        && CONSONANTS.contains(&hem_reconst[4])
+        && short_first_syllable(&hem_reconst[4..])
+    {
         return true;
     }
 
@@ -485,12 +508,6 @@ fn initial_clues(hem_reconst: &[char]) -> Option<&str> {
     // Check for initial "yakī" followed by a consonant
     if initial_four == ['ی', 'ک', 'ی', ' '] && CONSONANTS.contains(&hem_reconst[4]) {
         return Some("yaki");
-    }
-
-    // Check for initial "chunīn" or "chunān"
-    // This should always scan short-long, regardless of what follows
-    if initial_four == ['چ', 'ن', 'ی', 'ن'] || initial_four == ['چ', 'ن', 'ا', 'ن'] {
-        return Some("chunin/an");
     }
 
     // Check for initial "chīst"
