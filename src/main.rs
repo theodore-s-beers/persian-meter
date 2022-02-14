@@ -304,13 +304,15 @@ fn long_first_syllable(hem_reconst: &[char]) -> bool {
         return true;
     }
 
-    // Check for initial "az," "har," "gar," or "ay" followed by a consonant
+    // Check for initial "az," "har," "gar," "ay," or "ham" followed by a space
+    // and then a consonant
     // Used to check here for "bar," but it caused a problem -- it can be
     // "bar-i" with iżāfah
     if (initial_three == ['ا', 'ز', ' ']
         || initial_three == ['ه', 'ر', ' ']
         || initial_three == ['گ', 'ر', ' ']
-        || initial_three == ['ا', 'ی', ' '])
+        || initial_three == ['ا', 'ی', ' ']
+        || initial_three == ['ه', 'م', ' '])
         && CONSONANTS.contains(&hem_reconst[3])
     {
         return true;
