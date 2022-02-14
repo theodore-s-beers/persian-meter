@@ -12,6 +12,11 @@ struct Args {
     input: String,
 }
 
+const CONSONANTS: [char; 30] = [
+    'ء', 'ب', 'پ', 'ت', 'ث', 'ج', 'چ', 'ح', 'خ', 'د', 'ذ', 'ر', 'ز', 'ژ', 'س', 'ش', 'ص', 'ض', 'ط',
+    'ظ', 'ع', 'غ', 'ف', 'ق', 'ک', 'گ', 'ل', 'م', 'ن', 'ه',
+];
+
 fn main() -> Result<()> {
     //
     // Argument parsing etc.
@@ -61,7 +66,7 @@ fn main() -> Result<()> {
     let mut short_second_syl_markers: u32 = 0;
     let mut short_second_syl_locs = String::new();
 
-    // Variable for results report to be printed or saved
+    // Variable for results report, to be printed or saved
     let mut results_report = String::from("*** Assessing the following hemistichs ***\n");
 
     //
@@ -119,6 +124,7 @@ fn main() -> Result<()> {
             short_second_syl_locs.push_str(", ");
         }
 
+        // Check for other hemistich-initial clues
         if let Some(result) = initial_clues(&hem_reconst) {
             match result {
                 "chunin/an" | "kasi" | "yaki" => {
@@ -130,7 +136,7 @@ fn main() -> Result<()> {
                     long_second_syl_locs.push_str(&hem_no.to_string());
                     long_second_syl_locs.push_str(", ");
                 }
-                "chist" | "dust" | "nist" | "hamchu" => {
+                "chist" | "dust" | "nist" | "ham-chu" => {
                     long_first_syl_markers += 1;
                     long_first_syl_locs.push_str(&hem_no.to_string());
                     long_first_syl_locs.push_str(", ");
@@ -138,6 +144,15 @@ fn main() -> Result<()> {
                     short_second_syl_markers += 1;
                     short_second_syl_locs.push_str(&hem_no.to_string());
                     short_second_syl_locs.push_str(", ");
+                }
+                "chandan" => {
+                    long_first_syl_markers += 1;
+                    long_first_syl_locs.push_str(&hem_no.to_string());
+                    long_first_syl_locs.push_str(", ");
+
+                    long_second_syl_markers += 1;
+                    long_second_syl_locs.push_str(&hem_no.to_string());
+                    long_second_syl_locs.push_str(", ");
                 }
                 _ => {}
             }
@@ -163,23 +178,26 @@ fn main() -> Result<()> {
     results_report += "*** Meter length ***\n";
     results_report += &format!("Average letters per hemistich: {:.1}\n", avg_letters);
 
+    // Clearly long
     if avg_letters >= 23.5 {
         long_meter = true;
         results_report += "The meter appears to be long (muṡamman).\n";
+    // Probably long
     } else if avg_letters >= 22.5 {
+        // println!("file: {}; avg. letters: {:.1}", path, avg_letters);
         long_meter = true;
         results_report += "The meter appears to be long (muṡamman).\n";
         results_report += "(But this is pretty short for a long meter!)\n";
-        // println!("file: {}; avg. letters: {:.1}", path, avg_letters);
+    // Probably short
     } else if avg_letters >= 21.0 {
+        // println!("file: {}; avg. letters: {:.1}", path, avg_letters);
         short_meter = true;
         results_report += "The meter appears to be short (musaddas; or mutaqārib muṡamman).\n";
         results_report += "(But this is pretty long for a short meter!)\n";
-        // println!("file: {}; avg. letters: {:.1}", path, avg_letters);
+    // Clearly short
     } else {
         short_meter = true;
         results_report += "The meter appears to be short (musaddas; or mutaqārib muṡamman).\n";
-        // println!("file: {}; avg. letters: {:.1}", path, avg_letters);
     }
 
     // Report assessment of first syllable length
@@ -280,15 +298,11 @@ fn long_first_syllable(hem_reconst: &[char]) -> bool {
 
     // Check for initial "khwā-"
     // I found only one word that would break this: "khavāniq"
-    // But that's vanishingly rare
+    // But that's vanishingly rare -- only one poem on Ganjoor has it at all,
+    // and not at the start of a hemistich
     if initial_three == ['خ', 'و', 'ا'] {
         return true;
     }
-
-    let consonants = [
-        'ء', 'ب', 'پ', 'ت', 'ث', 'ج', 'چ', 'ح', 'خ', 'د', 'ذ', 'ر', 'ز', 'ژ', 'س', 'ش', 'ص', 'ض',
-        'ط', 'ظ', 'ع', 'غ', 'ف', 'ق', 'ک', 'گ', 'ل', 'م', 'ن', 'ه',
-    ];
 
     // Check for initial "az," "bar," "har," "gar," or "ay" followed by a
     // consonant
@@ -297,7 +311,7 @@ fn long_first_syllable(hem_reconst: &[char]) -> bool {
         || initial_three == ['ه', 'ر', ' ']
         || initial_three == ['گ', 'ر', ' ']
         || initial_three == ['ا', 'ی', ' '])
-        && consonants.contains(&hem_reconst[3])
+        && CONSONANTS.contains(&hem_reconst[3])
     {
         return true;
     }
@@ -306,13 +320,8 @@ fn long_first_syllable(hem_reconst: &[char]) -> bool {
 }
 
 fn short_first_syllable(hem_reconst: &[char]) -> bool {
-    let consonants = [
-        'ء', 'ب', 'پ', 'ت', 'ث', 'ج', 'چ', 'ح', 'خ', 'د', 'ذ', 'ر', 'ز', 'ژ', 'س', 'ش', 'ص', 'ض',
-        'ط', 'ظ', 'ع', 'غ', 'ف', 'ق', 'ک', 'گ', 'ل', 'م', 'ن', 'ه',
-    ];
-
     // Check for initial "zih" followed by a consonant (after a space)
-    if hem_reconst[0..2] == ['ز', ' '] && consonants.contains(&hem_reconst[2]) {
+    if hem_reconst[0..2] == ['ز', ' '] && CONSONANTS.contains(&hem_reconst[2]) {
         return true;
     }
 
@@ -351,28 +360,24 @@ fn short_first_syllable(hem_reconst: &[char]) -> bool {
 }
 
 fn long_second_syllable(hem_reconst: &[char]) -> bool {
-    let consonants = [
-        'ء', 'ب', 'پ', 'ت', 'ث', 'ج', 'چ', 'ح', 'خ', 'د', 'ذ', 'ر', 'ز', 'ژ', 'س', 'ش', 'ص', 'ض',
-        'ط', 'ظ', 'ع', 'غ', 'ف', 'ق', 'ک', 'گ', 'ل', 'م', 'ن', 'ه',
-    ];
-
     // Check for alif as third character, non-word-initial, not after vāv
     // Should maybe work on better criteria for alif qua long vowel marker
     if hem_reconst[2] == 'ا' && hem_reconst[1] != ' ' && hem_reconst[1] != 'و' {
         return true;
     }
 
-    // Check for initial "agar" followed by consonant
+    // Check for initial "agar" followed by a consonant
     // This would already have been flagged for a short first syllable
-    if hem_reconst[0..4] == ['ا', 'گ', 'ر', ' '] && consonants.contains(&hem_reconst[4]) {
+    if hem_reconst[0..4] == ['ا', 'گ', 'ر', ' '] && CONSONANTS.contains(&hem_reconst[4]) {
         return true;
     }
 
-    // Check for initial "bāshad" or "sāqī" followed by consonant
+    let initial_five = &hem_reconst[0..5];
+
+    // Check for initial "bāshad" or "sāqī" followed by a consonant
     // These would already have been flagged for a long first syllable
-    if (hem_reconst[0..5] == ['ب', 'ا', 'ش', 'د', ' ']
-        || hem_reconst[0..5] == ['س', 'ا', 'ق', 'ی', ' '])
-        && consonants.contains(&hem_reconst[5])
+    if (initial_five == ['ب', 'ا', 'ش', 'د', ' '] || initial_five == ['س', 'ا', 'ق', 'ی', ' '])
+        && CONSONANTS.contains(&hem_reconst[5])
     {
         return true;
     }
@@ -383,12 +388,14 @@ fn long_second_syllable(hem_reconst: &[char]) -> bool {
         return true;
     }
 
+    let initial_three = &hem_reconst[0..3];
+
     // If the opening word is "ay," "gar," or "az," followed by a consonant,
     // check if what follows is clearly another long syllable
-    if (hem_reconst[0..3] == ['ا', 'ی', ' ']
-        || hem_reconst[0..3] == ['گ', 'ر', ' ']
-        || hem_reconst[0..3] == ['ا', 'ز', ' '])
-        && consonants.contains(&hem_reconst[3])
+    if (initial_three == ['ا', 'ی', ' ']
+        || initial_three == ['گ', 'ر', ' ']
+        || initial_three == ['ا', 'ز', ' '])
+        && CONSONANTS.contains(&hem_reconst[3])
         && long_first_syllable(&hem_reconst[3..])
     {
         return true;
@@ -397,7 +404,7 @@ fn long_second_syllable(hem_reconst: &[char]) -> bool {
     // If the opening word is "bih" or "kih" (short), check if what follows is
     // clearly a long syllable
     // Is this legit? It's worth a shot
-    if (hem_reconst[0..3] == ['ب', 'ه', ' '] || hem_reconst[0..3] == ['ک', 'ه', ' '])
+    if (initial_three == ['ب', 'ه', ' '] || initial_three == ['ک', 'ه', ' '])
         && long_first_syllable(&hem_reconst[3..])
     {
         return true;
@@ -407,9 +414,11 @@ fn long_second_syllable(hem_reconst: &[char]) -> bool {
 }
 
 fn short_second_syllable(hem_reconst: &[char], hem_nospace: &[char]) -> bool {
+    let initial_three = &hem_reconst[0..3];
+
     // If the opening word is "bih" or "kih" (very common), check if what
     // follows is clearly another short syllable
-    if (hem_reconst[0..3] == ['ب', 'ه', ' '] || hem_reconst[0..3] == ['ک', 'ه', ' '])
+    if (initial_three == ['ب', 'ه', ' '] || initial_three == ['ک', 'ه', ' '])
         && short_first_syllable(&hem_reconst[3..])
     {
         return true;
@@ -430,6 +439,7 @@ fn short_second_syllable(hem_reconst: &[char], hem_nospace: &[char]) -> bool {
 
     // Check for initial "har-kih," "ān-kih," "gar-chih," or "ān-chih" (with or
     // without a space)
+    // "Gar-chih" has now caused a problem -- "chih" can be long?
     if initial_five == ['ه', 'ر', 'ک', 'ه', ' ']
         || initial_six == ['ه', 'ر', ' ', 'ک', 'ه', ' ']
         || initial_five == ['آ', 'ن', 'ک', 'ه', ' ']
@@ -445,10 +455,11 @@ fn short_second_syllable(hem_reconst: &[char], hem_nospace: &[char]) -> bool {
     // Used to check here for near-initial "kunad" or "shavad"
     // Could try to bring that back somehow?
 
+    let two_six = &hem_nospace[2..6];
+
     // Check for "chunīn" or "chunān" starting at the third letter (with or
     // without a space). I think this is valid
-    if hem_nospace[2..6] == ['چ', 'ن', 'ی', 'ن'] || hem_nospace[2..6] == ['چ', 'ن', 'ا', 'ن']
-    {
+    if two_six == ['چ', 'ن', 'ی', 'ن'] || two_six == ['چ', 'ن', 'ا', 'ن'] {
         return true;
     }
 
@@ -456,46 +467,56 @@ fn short_second_syllable(hem_reconst: &[char], hem_nospace: &[char]) -> bool {
 }
 
 fn initial_clues(hem_reconst: &[char]) -> Option<&str> {
-    let consonants = [
-        'ء', 'ب', 'پ', 'ت', 'ث', 'ج', 'چ', 'ح', 'خ', 'د', 'ذ', 'ر', 'ز', 'ژ', 'س', 'ش', 'ص', 'ض',
-        'ط', 'ظ', 'ع', 'غ', 'ف', 'ق', 'ک', 'گ', 'ل', 'م', 'ن', 'ه',
-    ];
-
     let initial_four = &hem_reconst[0..4];
     let initial_five = &hem_reconst[0..5];
     let initial_six = &hem_reconst[0..6];
 
-    // Check for initial "kasī" followed by consonant
-    if initial_four == ['ک', 'س', 'ی', ' '] && consonants.contains(&hem_reconst[4]) {
+    // Check for initial "kasī" followed by a consonant
+    if initial_four == ['ک', 'س', 'ی', ' '] && CONSONANTS.contains(&hem_reconst[4]) {
         return Some("kasi");
     }
 
-    // Check for initial "yakī" followed by consonant
-    if initial_four == ['ی', 'ک', 'ی', ' '] && consonants.contains(&hem_reconst[4]) {
+    // Check for initial "yakī" followed by a consonant
+    if initial_four == ['ی', 'ک', 'ی', ' '] && CONSONANTS.contains(&hem_reconst[4]) {
         return Some("yaki");
     }
 
     // Check for initial "chunīn" or "chunān"
+    // This should always scan short-long, regardless of what follows
     if initial_four == ['چ', 'ن', 'ی', 'ن'] || initial_four == ['چ', 'ن', 'ا', 'ن'] {
         return Some("chunin/an");
     }
 
+    // Check for initial "chīst"
+    // This should always scan long-short, regardless of what follows
     if initial_four == ['چ', 'ی', 'س', 'ت'] {
         return Some("chist");
     }
 
+    // Check for initial "dūst"
+    // This should always scan long-short, regardless of what follows
     if initial_four == ['د', 'و', 'س', 'ت'] {
         return Some("dust");
     }
 
-    // Otherwise we could get tripped up by "nayistān"
+    // Check for initial "nīst" followed by a space
+    // This should scan long-short
+    // Without the space, we could get tripped up by "nayistān"
     if initial_five == ['ن', 'ی', 'س', 'ت', ' '] {
         return Some("nist");
     }
 
+    // Check for initial "ham-chu" followed by a space (with or without an
+    // internal space)
     if initial_five == ['ه', 'م', 'چ', 'و', ' '] || initial_six == ['ه', 'م', ' ', 'چ', 'و', ' ']
     {
-        return Some("hamchu");
+        return Some("ham-chu");
+    }
+
+    // Check for initial "chandān"
+    // This should always scan long-long, regardless of what follows
+    if initial_five == ['چ', 'ن', 'د', 'ا', 'ن'] {
+        return Some("chandan");
     }
 
     None
