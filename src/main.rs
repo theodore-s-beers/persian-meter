@@ -318,6 +318,14 @@ fn long_first_syllable(hem_reconst: &[char]) -> bool {
         return true;
     }
 
+    let initial_five = &hem_reconst[0..5];
+
+    // Check for initial "amrūz"
+    // This will also have been flagged for a long second syllable
+    if initial_five == ['ا', 'م', 'ر', 'و', 'ز'] {
+        return true;
+    }
+
     false
 }
 
@@ -349,7 +357,8 @@ fn short_first_syllable(hem_reconst: &[char]) -> bool {
 
     // Check first four characters
     // Initial "shavad," "magar," "marā,"" "turā," or "hamah" followed by a
-    // space; or initial "chunīn" or "chunān," with or without a space
+    // space; or initial "chunīn" or "chunān" or "bi-bīn-," with or without a
+    // space
     match hem_reconst[0..4] {
         ['ش', 'و', 'د', ' ']
         | ['م', 'گ', 'ر', ' ']
@@ -357,7 +366,8 @@ fn short_first_syllable(hem_reconst: &[char]) -> bool {
         | ['ت', 'ر', 'ا', ' ']
         | ['ه', 'م', 'ه', ' ']
         | ['چ', 'ن', 'ی', 'ن']
-        | ['چ', 'ن', 'ا', 'ن'] => return true,
+        | ['چ', 'ن', 'ا', 'ن']
+        | ['ب', 'ب', 'ی', 'ن'] => return true,
         _ => {}
     }
 
@@ -387,6 +397,12 @@ fn long_second_syllable(hem_reconst: &[char]) -> bool {
     // This would already have been flagged for a long first syllable
     // Used to check here for initial "sāqī," but that can be spoiled by iżāfah
     if initial_five == ['ب', 'ا', 'ش', 'د', ' '] && CONSONANTS.contains(&hem_reconst[5]) {
+        return true;
+    }
+
+    // Check for initial "amrūz"
+    // This will also have been flagged for a long first syllable
+    if initial_five == ['ا', 'م', 'ر', 'و', 'ز'] {
         return true;
     }
 
@@ -457,16 +473,25 @@ fn short_second_syllable(hem_reconst: &[char], hem_nospace: &[char]) -> bool {
     // without a space)
     // "Gar-chih" has now caused a problem -- "chih" can be long? Should I get
     // rid of it? But this seems very rare
-    if initial_five == ['ه', 'ر', 'ک', 'ه', ' ']
-        || initial_six == ['ه', 'ر', ' ', 'ک', 'ه', ' ']
-        || initial_five == ['آ', 'ن', 'ک', 'ه', ' ']
-        || initial_six == ['آ', 'ن', ' ', 'ک', 'ه', ' ']
-        || initial_five == ['گ', 'ر', 'چ', 'ه', ' ']
-        || initial_six == ['گ', 'ر', ' ', 'چ', 'ه', ' ']
-        || initial_five == ['آ', 'ن', 'چ', 'ه', ' ']
-        || initial_six == ['آ', 'ن', ' ', 'چ', 'ه', ' ']
-    {
-        return true;
+
+    // Also check for initial "pādishā-"
+    // This will already have been flagged for a long first syllable
+
+    match initial_five {
+        ['ه', 'ر', 'ک', 'ه', ' ']
+        | ['آ', 'ن', 'ک', 'ه', ' ']
+        | ['گ', 'ر', 'چ', 'ه', ' ']
+        | ['آ', 'ن', 'چ', 'ه', ' ']
+        | ['پ', 'ا', 'د', 'ش', 'ا'] => return true,
+        _ => {}
+    }
+
+    match initial_six {
+        ['ه', 'ر', ' ', 'ک', 'ه', ' ']
+        | ['آ', 'ن', ' ', 'ک', 'ه', ' ']
+        | ['گ', 'ر', ' ', 'چ', 'ه', ' ']
+        | ['آ', 'ن', ' ', 'چ', 'ه', ' '] => return true,
+        _ => {}
     }
 
     // Used to check here for near-initial "kunad" or "shavad"
