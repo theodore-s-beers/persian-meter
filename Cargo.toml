@@ -5,6 +5,6 @@ authors = ["Theodore Beers <theo.beers@fu-berlin.de>"]
 edition = "2021"
 
 [dependencies]
-anyhow = "1.0.55"
-clap = { version = "3.1.5", features = ["derive"] }
-regex = "1.5.4"
+anyhow = "1.0.56"
+clap = { version = "3.1.6", features = ["derive"] }
+regex = "1.5.5"
