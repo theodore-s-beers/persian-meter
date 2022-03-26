@@ -1,3 +1,6 @@
+#![warn(clippy::pedantic, clippy::cargo)]
+#![allow(clippy::unnested_or_patterns)]
+
 use anyhow::{anyhow, Result};
 use clap::Parser;
 use regex::Regex;
@@ -17,6 +20,7 @@ const CONSONANTS: [char; 30] = [
     'ظ', 'ع', 'غ', 'ف', 'ق', 'ک', 'گ', 'ل', 'م', 'ن', 'ه',
 ];
 
+#[allow(clippy::too_many_lines)]
 fn main() -> Result<()> {
     //
     // Argument parsing etc.
@@ -84,7 +88,7 @@ fn main() -> Result<()> {
 
         // Reconstruct hemistich as vector of chars
         // Make a second version without spaces
-        let hem_reconst: Vec<char> = reconstruct_hemistich(hem.to_string())?;
+        let hem_reconst: Vec<char> = reconstruct_hemistich(hem)?;
         let mut hem_nospace = hem_reconst.clone();
         hem_nospace.retain(|x| *x != ' ');
 
@@ -93,6 +97,7 @@ fn main() -> Result<()> {
         results_report += &format!("{}: {}\n", hem_no, hem_reconst_str);
 
         // Count chars (excluding spaces); add to the total
+        #[allow(clippy::cast_possible_truncation)]
         let hem_letter_count = hem_nospace.len() as u32;
         total_letters += hem_letter_count;
 
@@ -164,8 +169,9 @@ fn main() -> Result<()> {
     //
 
     // Calculate average letters per hemistich
-    let total_letters_float = total_letters as f64;
+    let total_letters_float = f64::from(total_letters);
 
+    #[allow(clippy::cast_precision_loss)]
     let total_hemistichs_float = if total_hemistichs > 40 {
         40.0
     } else {
@@ -203,9 +209,9 @@ fn main() -> Result<()> {
     // Report assessment of first syllable length
     let (long_first, short_first, first_report) = first_syllable_assessment(
         long_first_syl_markers,
-        long_first_syl_locs,
+        &long_first_syl_locs,
         short_first_syl_markers,
-        short_first_syl_locs,
+        &short_first_syl_locs,
     );
 
     results_report += &first_report;
@@ -213,9 +219,9 @@ fn main() -> Result<()> {
     // Report assessment of second syllable length
     let (long_second, short_second, second_report) = second_syllable_assessment(
         long_second_syl_markers,
-        long_second_syl_locs,
+        &long_second_syl_locs,
         short_second_syl_markers,
-        short_second_syl_locs,
+        &short_second_syl_locs,
     );
 
     results_report += &second_report;
@@ -240,12 +246,13 @@ fn main() -> Result<()> {
 // Analysis functions
 //
 
-fn reconstruct_hemistich(hem: String) -> Result<Vec<char>> {
+fn reconstruct_hemistich(hem: &str) -> Result<Vec<char>> {
     // Create a vec for reconstruction
     let mut hem_reconst = Vec::new();
 
     // Review one character at a time, passing through valid input
     for c in hem.trim().chars() {
+        #[allow(clippy::match_same_arms)]
         match c {
             // ٰVowels
             'ا' | 'آ' | 'و' | 'ی' => hem_reconst.push(c),
@@ -582,9 +589,9 @@ fn initial_clues(hem_reconst: &[char]) -> Option<&str> {
 
 fn first_syllable_assessment(
     long_first_syl_markers: u32,
-    long_first_syl_locs: String,
+    long_first_syl_locs: &str,
     short_first_syl_markers: u32,
-    short_first_syl_locs: String,
+    short_first_syl_locs: &str,
 ) -> (bool, bool, String) {
     // Initialize variables for return values
     let mut long_first = false;
@@ -629,9 +636,9 @@ fn first_syllable_assessment(
 
 fn second_syllable_assessment(
     long_second_syl_markers: u32,
-    long_second_syl_locs: String,
+    long_second_syl_locs: &str,
     short_second_syl_markers: u32,
-    short_second_syl_locs: String,
+    short_second_syl_locs: &str,
 ) -> (bool, bool, String) {
     // Initialize variables for return values
     let mut long_second = false;
@@ -678,6 +685,7 @@ fn second_syllable_assessment(
     (long_second, short_second, second_report)
 }
 
+#[allow(clippy::fn_params_excessive_bools)]
 fn final_assessment(
     long_meter: bool,
     short_meter: bool,
