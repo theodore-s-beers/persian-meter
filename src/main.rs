@@ -4,6 +4,7 @@
 use anyhow::{anyhow, Result};
 use clap::Parser;
 use regex::Regex;
+use std::fmt::Write as _;
 use std::fs;
 
 /// A program that attempts to find the meter of a Persian poem
@@ -94,7 +95,7 @@ fn main() -> Result<()> {
 
         // Record reconstructed hemistich and its number
         let hem_reconst_str: String = hem_reconst.iter().collect();
-        results_report += &format!("{}: {}\n", hem_no, hem_reconst_str);
+        let _ = writeln!(results_report, "{}: {}", hem_no, hem_reconst_str);
 
         // Count chars (excluding spaces); add to the total
         #[allow(clippy::cast_possible_truncation)]
@@ -182,7 +183,11 @@ fn main() -> Result<()> {
 
     // Report assessment of meter length
     results_report += "*** Meter length ***\n";
-    results_report += &format!("Average letters per hemistich: {:.1}\n", avg_letters);
+    let _ = writeln!(
+        results_report,
+        "Average letters per hemistich: {:.1}",
+        avg_letters
+    );
 
     // Clearly long
     if avg_letters >= 23.5 {
@@ -601,15 +606,17 @@ fn first_syllable_assessment(
 
     // Report indications of first syllable length
     if long_first_syl_markers > 0 {
-        first_report += &format!(
-            "Indications of a long first syllable: {} (at {})\n",
+        let _ = writeln!(
+            first_report,
+            "Indications of a long first syllable: {} (at {})",
             long_first_syl_markers,
             long_first_syl_locs.trim_end_matches(", ")
         );
     }
     if short_first_syl_markers > 0 {
-        first_report += &format!(
-            "Indications of a short first syllable: {} (at {})\n",
+        let _ = writeln!(
+            first_report,
+            "Indications of a short first syllable: {} (at {})",
             short_first_syl_markers,
             short_first_syl_locs.trim_end_matches(", ")
         );
@@ -648,8 +655,9 @@ fn second_syllable_assessment(
 
     // Report indications of second syllable length
     if long_second_syl_markers > 0 {
-        second_report += &format!(
-            "Suggestions of a long second syllable: {} (at {})\n",
+        let _ = writeln!(
+            second_report,
+            "Suggestions of a long second syllable: {} (at {})",
             long_second_syl_markers,
             long_second_syl_locs.trim_end_matches(", ")
         );
@@ -658,8 +666,9 @@ fn second_syllable_assessment(
         }
     }
     if short_second_syl_markers > 0 {
-        second_report += &format!(
-            "Suggestions of a short second syllable: {} (at {})\n",
+        let _ = writeln!(
+            second_report,
+            "Suggestions of a short second syllable: {} (at {})",
             short_second_syl_markers,
             short_second_syl_locs.trim_end_matches(", ")
         );
