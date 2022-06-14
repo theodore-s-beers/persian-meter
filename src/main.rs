@@ -7,12 +7,11 @@ use regex::Regex;
 use std::fmt::Write as _;
 use std::fs;
 
-/// A program that attempts to find the meter of a Persian poem
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 struct Args {
     /// Path of input text file
-    #[clap()]
+    #[clap(short, long, value_parser)]
     input: String,
 }
 

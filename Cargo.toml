@@ -3,7 +3,7 @@ name = "persian-meter"
 version = "0.1.4"
 authors = ["Theodore Beers <theo.beers@fu-berlin.de>"]
 edition = "2021"
-description = "Detect the meter of a classical Persian poem"
+description = "A program to detect the meter of a classical Persian poem"
 license = "MIT"
 repository = "https://github.com/theodore-s-beers/persian-meter"
 keywords = ["Persian", "meter", "poetry", "prosody"]
@@ -11,5 +11,5 @@ categories = ["command-line-utilities"]
 
 [dependencies]
 anyhow = "1.0.57"
-clap = { version = "3.1.18", features = ["derive"] }
+clap = { version = "3.2.1", features = ["derive"] }
 regex = "1.5.6"
