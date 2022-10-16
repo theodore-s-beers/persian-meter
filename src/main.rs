@@ -94,7 +94,7 @@ fn main() -> Result<()> {
 
         // Record reconstructed hemistich and its number
         let hem_reconst_str: String = hem_reconst.iter().collect();
-        let _ = writeln!(results_report, "{}: {}", hem_no, hem_reconst_str);
+        let _ = writeln!(results_report, "{hem_no}: {hem_reconst_str}");
 
         // Count chars (excluding spaces); add to the total
         #[allow(clippy::cast_possible_truncation)]
@@ -241,7 +241,7 @@ fn main() -> Result<()> {
     );
 
     results_report += &summary_report;
-    print!("{}", results_report);
+    print!("{results_report}");
 
     Ok(())
 }
