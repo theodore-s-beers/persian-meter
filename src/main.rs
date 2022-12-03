@@ -184,8 +184,7 @@ fn main() -> Result<()> {
     results_report += "*** Meter length ***\n";
     let _ = writeln!(
         results_report,
-        "Average letters per hemistich: {:.1}",
-        avg_letters
+        "Average letters per hemistich: {avg_letters:.1}"
     );
 
     // Clearly long
