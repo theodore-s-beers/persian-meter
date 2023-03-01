@@ -94,7 +94,7 @@ fn main() -> Result<()> {
 
         // Record reconstructed hemistich and its number
         let hem_reconst_str: String = hem_reconst.iter().collect();
-        let _ = writeln!(results_report, "{hem_no}: {hem_reconst_str}");
+        writeln!(results_report, "{hem_no}: {hem_reconst_str}").unwrap();
 
         // Count chars (excluding spaces); add to the total
         #[allow(clippy::cast_possible_truncation)]
@@ -182,10 +182,11 @@ fn main() -> Result<()> {
 
     // Report assessment of meter length
     results_report += "*** Meter length ***\n";
-    let _ = writeln!(
+    writeln!(
         results_report,
         "Average letters per hemistich: {avg_letters:.1}"
-    );
+    )
+    .unwrap();
 
     // Clearly long
     if avg_letters >= 23.5 {
@@ -604,20 +605,22 @@ fn first_syllable_assessment(
 
     // Report indications of first syllable length
     if long_first_syl_markers > 0 {
-        let _ = writeln!(
+        writeln!(
             first_report,
             "Indications of a long first syllable: {} (at {})",
             long_first_syl_markers,
             long_first_syl_locs.trim_end_matches(", ")
-        );
+        )
+        .unwrap();
     }
     if short_first_syl_markers > 0 {
-        let _ = writeln!(
+        writeln!(
             first_report,
             "Indications of a short first syllable: {} (at {})",
             short_first_syl_markers,
             short_first_syl_locs.trim_end_matches(", ")
-        );
+        )
+        .unwrap();
     }
 
     // Report assessment of first syllable length
@@ -653,23 +656,25 @@ fn second_syllable_assessment(
 
     // Report indications of second syllable length
     if long_second_syl_markers > 0 {
-        let _ = writeln!(
+        writeln!(
             second_report,
             "Suggestions of a long second syllable: {} (at {})",
             long_second_syl_markers,
             long_second_syl_locs.trim_end_matches(", ")
-        );
+        )
+        .unwrap();
         if long_second_syl_markers == 1 {
             second_report += "(Be careful with this; one result is not much.)\n";
         }
     }
     if short_second_syl_markers > 0 {
-        let _ = writeln!(
+        writeln!(
             second_report,
             "Suggestions of a short second syllable: {} (at {})",
             short_second_syl_markers,
             short_second_syl_locs.trim_end_matches(", ")
-        );
+        )
+        .unwrap();
         if short_second_syl_markers == 1 {
             second_report += "(Be careful with this; one result is not much.)\n";
         }
