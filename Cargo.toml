@@ -10,6 +10,6 @@ keywords = ["Persian", "meter", "poetry", "prosody"]
 categories = ["command-line-utilities"]
 
 [dependencies]
-anyhow = "1.0.69"
+anyhow = "1.0.70"
 clap = { version = "4.1.8", features = ["derive"] }
 regex = "1.7.1"
