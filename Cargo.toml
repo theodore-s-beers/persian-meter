@@ -11,5 +11,5 @@ categories = ["command-line-utilities"]
 
 [dependencies]
 anyhow = "1.0.70"
-clap = { version = "4.2.4", features = ["derive"] }
+clap = { version = "4.2.5", features = ["derive"] }
 regex = "1.7.3"
