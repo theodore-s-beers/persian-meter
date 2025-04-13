@@ -1,7 +1,7 @@
 #![warn(clippy::pedantic, clippy::nursery, clippy::cargo)]
 #![allow(clippy::unnested_or_patterns)]
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use clap::Parser;
 use regex::Regex;
 use std::fmt::Write as _;
