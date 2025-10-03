@@ -143,19 +143,16 @@ fn main() -> Result<()> {
 
 fn load_poem(path: &str) -> Result<String> {
     let metadata = fs::metadata(path)
-        .map_err(|e| anyhow!("Failed to read file metadata for '{}': {}", path, e))?;
+        .map_err(|e| anyhow!("Failed to read file metadata for '{path}': {e}"))?;
 
     let file_size = metadata.len();
     if file_size > MAX_FILE_SIZE {
         return Err(anyhow!(
-            "File '{}' is too large ({} bytes). Maximum allowed size is {} bytes.",
-            path,
-            file_size,
-            MAX_FILE_SIZE
+            "File '{path}' is too large ({file_size} bytes). Maximum allowed size is {MAX_FILE_SIZE} bytes."
         ));
     }
 
-    fs::read_to_string(path).map_err(|e| anyhow!("Failed to read file '{}': {}", path, e))
+    fs::read_to_string(path).map_err(|e| anyhow!("Failed to read file '{path}': {e}"))
 }
 
 fn preprocess(poem: &str) -> Result<String> {
@@ -165,9 +162,7 @@ fn preprocess(poem: &str) -> Result<String> {
     let line_count = trimmed.lines().count();
     if line_count < MIN_HEMISTICHS {
         return Err(anyhow!(
-            "Poem is too short. Found {} hemistichs; at least {} are required.",
-            line_count,
-            MIN_HEMISTICHS
+            "Poem is too short. Found {line_count} hemistichs; at least {MIN_HEMISTICHS} are required."
         ));
     }
 
