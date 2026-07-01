@@ -1,20 +1,24 @@
-name: Run Clippy
+name: Clippy
 
 on:
   pull_request:
-    branches:
-      - master
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
-  build_and_check:
+  clippy:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v7
         with:
-          toolchain: nightly
-          override: true
+          persist-credentials: false
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
           components: clippy
-      - uses: actions-rs/cargo@v1
-        with:
-          command: clippy
+
+      - run: cargo clippy --all-targets
