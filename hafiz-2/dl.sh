@@ -1,6 +1,6 @@
 #! /usr/bin/env bash
 
-set -Eeuo pipefail
+set -euo pipefail
 
 for i in {401..495}; do
 	curl -fs "https://ganjoor.net/hafez/ghazal/sh$i/" |
