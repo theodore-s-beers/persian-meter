@@ -10,7 +10,7 @@ keywords = ["Persian", "meter", "poetry", "prosody"]
 categories = ["command-line-utilities"]
 
 [dependencies]
-anyhow = "1.0.103"
-clap = { version = "4.6.1", features = ["derive"] }
+anyhow = "1.0.104"
+clap = { version = "4.6.5", features = ["derive"] }
 once_cell = "1.21.4"
-regex = "1.12.4"
+regex = "1.13.1"
